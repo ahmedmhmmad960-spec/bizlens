@@ -1,0 +1,13 @@
+order_id,date,customer_id,product_id,quantity,revenue,discount,cost,channel,status
+O001,2026-08-01,C001,P001,1,100,5,50,website,completed
+O002,2026-08-02,C002,P001,1,100,5,50,website,completed
+O003,2026-08-03,C003,P002,1,100,10,60,instagram,completed
+O004,2026-08-04,C004,P002,1,100,10,60,website,completed
+O005,2026-08-05,C005,P003,1,80,5,40,instagram,completed
+O006,2026-08-06,C006,P001,1,100,5,50,website,completed
+O007,2026-08-07,C001,P001,1,100,20,80,website,completed
+O008,2026-08-08,C007,P001,1,120,20,90,website,completed
+O009,2026-08-09,C008,P002,1,100,25,120,instagram,completed
+O010,2026-08-10,C009,P002,1,100,25,120,website,completed
+O011,2026-08-11,C010,P003,1,90,15,50,instagram,completed
+O012,2026-08-12,C011,P004,1,80,10,60,website,completed
