@@ -29,7 +29,7 @@ function MetricMini({ label, value, tone }: { label: string; value: string; tone
   return <div className="metric-mini"><span>{label}</span><strong className={tone}>{value}</strong></div>;
 }
 
-export default function EntryScreen() {
+export default function EntryScreen({ onStart }: { onStart: () => void }) {
   const [message, setMessage] = useState<string | null>(null);
 
   return (
@@ -48,7 +48,7 @@ export default function EntryScreen() {
           <h1 id="hero-title">See your business<br /><span>clearly.</span></h1>
           <p>Turn business data into clear decisions.</p>
           <div className="hero-actions">
-            <Button icon="arrow" onClick={() => setMessage("The diagnosis flow is the next screen we are implementing.")}>Start a Diagnosis</Button>
+            <Button icon="arrow" onClick={onStart}>Start a Diagnosis</Button>
             <Button variant="secondary" onClick={() => document.getElementById("example-diagnosis")?.scrollIntoView({ behavior: "smooth" })}>Try Demo</Button>
           </div>
           <div className="philosophy" aria-label="BizLens product philosophy"><span>Business data</span><i /><span>Intelligence</span><i /><span>Clear decisions</span></div>
@@ -62,18 +62,18 @@ export default function EntryScreen() {
               <div className="signal-mark" aria-hidden="true">B</div>
             </div>
             <div className="preview-metrics">
-              <MetricMini label="Revenue" value="+51.6%" tone="positive" />
-              <MetricMini label="Costs" value="+276.7%" tone="critical" />
-              <MetricMini label="Gross Margin" value="−87.4 pts" tone="critical" />
+              <MetricMini label="Revenue" value="+18.4%" tone="positive" />
+              <MetricMini label="Costs" value="+27.4%" tone="critical" />
+              <MetricMini label="Gross Margin" value="−11.3 pp" tone="critical" />
             </div>
-            <button className="why-button" type="button" onClick={() => setMessage("The full evidence view will be connected after the core setup flow.")}>Why did this happen?<Icon name="arrow" size={15} /></button>
+            <button className="why-button" type="button" onClick={() => setMessage("Start a diagnosis to see the full evidence chain.")}>Why did this happen?<Icon name="arrow" size={15} /></button>
           </div>
         </section>
 
         <section className="method-strip" aria-labelledby="method-title">
           <div><span className="section-kicker">Built for trust</span><h2 id="method-title">Analysis first. AI second.</h2></div>
           <p>BizLens does not ask AI to guess what is happening. Its diagnosis engine finds and verifies business signals before AI explains them.</p>
-          <button type="button" onClick={() => setMessage("Methodology is part of the next implementation pass.")}>Explore the methodology <Icon name="arrow" size={15} /></button>
+          <button type="button" onClick={() => setMessage("Methodology is part of the product trust layer.")}>Explore the methodology <Icon name="arrow" size={15} /></button>
         </section>
       </main>
 
