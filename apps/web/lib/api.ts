@@ -24,6 +24,14 @@ export type Diagnosis = {
   [key: string]: unknown;
 };
 
+export type ReplayStep = {
+  step?: number;
+  key?: string;
+  title?: string;
+  description?: string;
+  data?: unknown;
+};
+
 export type AnalysisResponse = {
   success: boolean;
   analysis_id: string;
@@ -35,7 +43,12 @@ export type AnalysisResponse = {
   what_changed: Record<string, unknown>[];
   ai_explanations: Record<string, unknown>[];
   business_report: Record<string, unknown>;
-  demo_replay: Record<string, unknown>[];
+  demo_replay: {
+    title?: string;
+    description?: string;
+    total_steps?: number;
+    steps?: ReplayStep[];
+  };
 };
 
 async function parseResponse(response: Response) {
