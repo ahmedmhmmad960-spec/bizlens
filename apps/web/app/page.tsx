@@ -2,31 +2,22 @@
 
 import { useState } from "react";
 import DiagnosisFlow from "@/components/diagnosis-flow";
+import DiagnosisFeed from "@/components/diagnosis-feed";
 import EntryScreen from "@/components/entry-screen";
+import type { AnalysisResponse } from "@/lib/api";
 
-type View = "entry" | "diagnosis" | "complete";
+type View = "entry" | "diagnosis" | "feed";
 
 export default function Home() {
   const [view, setView] = useState<View>("entry");
+  const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
 
   if (view === "diagnosis") {
-    return <DiagnosisFlow onComplete={() => setView("complete")} />;
+    return <DiagnosisFlow onComplete={(result) => { if (result?.success) { setAnalysis(result); setView("feed"); } else { setView("entry"); } }} />;
   }
 
-  if (view === "complete") {
-    return (
-      <main className="flow-page completion-page">
-        <header className="flow-header">
-          <div className="logo"><span className="logo-mark" aria-hidden="true"><span /></span><span>BizLens</span></div>
-        </header>
-        <section className="completion-card">
-          <span className="flow-kicker">Analysis complete</span>
-          <h1>Your business picture is ready.</h1>
-          <p>The next layer is the diagnosis feed: problems, evidence, impact, confidence, and recommended actions.</p>
-          <button className="button primary" type="button" onClick={() => setView("entry")}>Back to BizLens <span>→</span></button>
-        </section>
-      </main>
-    );
+  if (view === "feed" && analysis) {
+    return <DiagnosisFeed diagnoses={analysis.top_diagnoses} onBack={() => setView("diagnosis")} />;
   }
 
   return <EntryScreen onStart={() => setView("diagnosis")} />;
