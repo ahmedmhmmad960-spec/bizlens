@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import type { Diagnosis } from "@/lib/api";
+import "./diagnosis-feed.css";
 
 type DiagnosisFeedProps = {
   diagnoses: Diagnosis[];
