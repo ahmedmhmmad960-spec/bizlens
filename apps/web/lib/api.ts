@@ -38,8 +38,6 @@ export type AnalysisResponse = {
   demo_replay: Record<string, unknown>[];
 };
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
-
 async function parseResponse(response: Response) {
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
@@ -55,7 +53,7 @@ export async function analyzeCsv(file: File): Promise<AnalysisResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_URL}/analyze`, {
+  const response = await fetch("/api/analyze", {
     method: "POST",
     body: formData,
   });
@@ -64,7 +62,7 @@ export async function analyzeCsv(file: File): Promise<AnalysisResponse> {
 }
 
 export async function askBizLens(analysisId: string, question: string) {
-  const response = await fetch(`${API_URL}/ask`, {
+  const response = await fetch("/api/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ analysis_id: analysisId, question }),
