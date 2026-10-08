@@ -13,6 +13,8 @@ export type Diagnosis = {
   diagnosis: string;
   title?: string;
   description?: string;
+  explanation?: string;
+  recommended_action?: string;
   severity?: string;
   priority?: number;
   confidence?: string;
