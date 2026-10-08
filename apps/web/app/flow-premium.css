@@ -1,0 +1,89 @@
+/* Figma-aligned premium setup flow. Kept separate so the existing app styles remain stable. */
+
+.flow-progress-wrap { margin: 26px 0 54px; }
+.flow-progress-wrap .flow-progress { margin: 0; }
+.flow-step-meta { display:flex; justify-content:space-between; margin-top:10px; color:var(--muted); font-size:9px; letter-spacing:.12em; text-transform:uppercase; }
+.flow-hero-premium { max-width:760px; margin-bottom:38px; }
+.flow-hero-premium h1 { max-width:760px; margin-left:auto; margin-right:auto; }
+.flow-hero-premium p { max-width:610px; }
+
+.question-grid-premium { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.question-grid-premium .question-card { min-height:104px; padding:22px 24px; border-radius:10px; position:relative; }
+.question-grid-premium .question-card.selected { border-color:rgba(255,216,77,.48); box-shadow:0 0 0 1px rgba(255,216,77,.08) inset,0 16px 40px rgba(0,0,0,.18); }
+.question-card-copy { display:flex; flex-direction:column; gap:6px; padding-right:18px; }
+.question-card-copy strong { color:var(--text); font-size:15px; font-weight:550; letter-spacing:-.02em; }
+.question-card-copy small { color:var(--secondary); font-size:11px; line-height:1.45; }
+.question-tag { width:fit-content; color:var(--accent); font-size:8px; text-transform:uppercase; letter-spacing:.12em; font-weight:650; }
+.question-card-arrow { color:var(--muted); display:grid; place-items:center; transition:transform .16s ease,color .16s ease; }
+.question-card:hover .question-card-arrow,.question-card.selected .question-card-arrow { color:var(--accent); transform:translateX(3px); }
+.own-question-premium { margin-top:18px; padding:20px; border:1px solid var(--border); border-radius:10px; background:linear-gradient(145deg,rgba(255,255,255,.018),rgba(255,255,255,.006)); }
+.own-question-premium > div:first-child { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:12px; }
+.own-question-premium span { color:var(--text); font-size:12px; font-weight:550; }
+.own-question-premium small { color:var(--muted); font-size:10px; }
+.own-question-input { display:flex; gap:8px; }
+.own-question-input input { min-width:0; flex:1; height:42px; padding:0 13px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); outline:none; font-size:12px; }
+.own-question-input input:focus { border-color:rgba(255,216,77,.45); box-shadow:0 0 0 3px rgba(255,216,77,.06); }
+.own-question-input button { border:1px solid var(--border); border-radius:7px; background:var(--surface); color:var(--secondary); padding:0 14px; font-size:11px; cursor:pointer; }
+.own-question-input button:hover { color:var(--text); border-color:var(--border-light); }
+
+.upload-heading { margin-bottom:30px; }
+.upload-card-premium { min-height:390px; border:1px dashed #3d434b; border-radius:12px; background:radial-gradient(circle at 50% 25%,rgba(255,216,77,.035),transparent 32%),linear-gradient(145deg,rgba(16,18,20,.96),rgba(11,13,14,.96)); box-shadow:0 28px 80px rgba(0,0,0,.24); position:relative; transition:border-color .18s ease,background .18s ease,transform .18s ease,box-shadow .18s ease; }
+.upload-card-premium:before { content:""; position:absolute; inset:12px; border:1px solid rgba(255,255,255,.025); border-radius:8px; pointer-events:none; }
+.upload-card-premium:hover,.upload-card-premium.drag-active { border-color:rgba(255,216,77,.58); background:radial-gradient(circle at 50% 20%,rgba(255,216,77,.06),transparent 38%),linear-gradient(145deg,rgba(18,20,21,.98),rgba(11,13,14,.98)); box-shadow:0 34px 90px rgba(0,0,0,.32),0 0 0 1px rgba(255,216,77,.05) inset; transform:translateY(-1px); }
+.upload-icon-premium { width:56px; height:56px; margin-bottom:15px; border-radius:12px; border-color:#3d4249; background:#151719; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+.upload-icon-premium svg { transition:transform .18s ease; }
+.upload-card-premium:hover .upload-icon-premium svg,.upload-card-premium.drag-active .upload-icon-premium svg { transform:translateY(-3px); }
+.upload-eyebrow { color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.14em; font-weight:650; }
+.upload-card-premium h2 { margin:13px 0 8px; font-size:22px; letter-spacing:-.035em; }
+.upload-card-premium p { margin:0 0 5px; color:var(--secondary); font-size:12px; }
+.upload-card-premium p button { border:0; background:none; color:var(--accent); padding:0; cursor:pointer; }
+.upload-card-premium > small { color:var(--muted); font-size:10px; margin-top:4px; }
+.upload-ready { color:var(--positive); }
+.upload-icon-success { color:var(--positive); border-color:rgba(74,222,128,.22); background:rgba(74,222,128,.045); }
+.upload-card-premium.has-file { border-style:solid; border-color:rgba(74,222,128,.25); }
+.selected-file-actions { display:flex; align-items:center; gap:10px; margin-top:14px; }
+.selected-file-actions .button { min-height:38px; font-size:11px; }
+.text-button { border:0; background:none; color:var(--muted); font-size:11px; cursor:pointer; padding:8px; }
+.text-button:hover { color:var(--critical); }
+.upload-options { display:flex; flex-direction:column; align-items:center; margin-top:18px; }
+.upload-or { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.12em; }
+.upload-or i { display:block; width:74px; height:1px; background:var(--border); }
+.demo-dataset { width:min(430px,100%); margin-top:13px; padding:12px 14px; display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); text-align:left; cursor:pointer; transition:.16s ease; }
+.demo-dataset:hover { border-color:var(--border-light); background:var(--elevated); transform:translateY(-1px); }
+.demo-file-icon { width:34px; height:34px; display:grid; place-items:center; flex:0 0 auto; border:1px solid var(--border-light); border-radius:7px; color:var(--secondary); background:#121416; }
+.demo-dataset > span:nth-child(2) { min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; }
+.demo-dataset strong { font-size:11px; font-weight:550; }
+.demo-dataset small { color:var(--muted); font-size:9px; }
+.demo-dataset > svg { color:var(--muted); }
+.flow-error-premium { margin-top:14px; padding:12px 14px; border:1px solid rgba(248,113,113,.22); border-radius:8px; background:rgba(248,113,113,.045); color:#fca5a5; font-size:11px; line-height:1.5; }
+.flow-trust-premium { margin-top:17px; max-width:640px; display:flex; justify-content:center; align-items:center; gap:9px; }
+.flow-trust-premium span { color:var(--secondary); font-weight:550; }
+.flow-trust-premium i { width:3px; height:3px; border-radius:50%; background:var(--border-light); }
+.flow-actions-premium { margin-top:22px; }
+.flow-actions-premium .button { min-height:46px; padding-inline:20px; }
+
+.data-summary-premium { box-shadow:0 18px 55px rgba(0,0,0,.16); }
+.data-summary-premium > div { min-height:112px; }
+.interpretation-premium { box-shadow:0 12px 35px rgba(0,0,0,.12); }
+.quality-card-premium { box-shadow:0 18px 55px rgba(0,0,0,.16); }
+.quality-row b.quality-ok { color:var(--positive); }
+.quality-row b.quality-warning { color:var(--warning); }
+.quality-note-premium { box-shadow:0 12px 35px rgba(0,0,0,.12); }
+.replay-screen-premium .replay-card { box-shadow:0 22px 65px rgba(0,0,0,.2); }
+.replay-card-premium .replay-row.active { box-shadow:inset 2px 0 0 var(--accent); }
+.replay-status-premium { flex-direction:column; gap:5px; }
+.replay-status-premium strong { color:var(--text); font-size:12px; font-weight:550; }
+.replay-status-premium small { max-width:560px; color:var(--muted); line-height:1.5; }
+
+@media (max-width:700px) {
+  .flow-step-meta { margin-top:8px; }
+  .flow-progress-wrap { margin-bottom:40px; }
+  .question-grid-premium { grid-template-columns:1fr; }
+  .question-grid-premium .question-card { min-height:92px; }
+  .own-question-premium > div:first-child { align-items:flex-start; flex-direction:column; gap:4px; }
+  .own-question-input { flex-direction:column; }
+  .own-question-input button { height:40px; }
+  .upload-card-premium { min-height:340px; padding:28px 20px; }
+  .demo-dataset { width:100%; }
+  .flow-trust-premium { flex-wrap:wrap; }
+}
