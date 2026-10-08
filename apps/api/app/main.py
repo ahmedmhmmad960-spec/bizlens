@@ -87,8 +87,12 @@ async def ask(request: AskRequest) -> dict[str, Any]:
             "error": "Analysis not found or expired.",
         }
 
+    analysis = analysis_context.get("analysis", {})
     context = {
-        "analysis": analysis_context.get("analysis", {}),
+        "metrics": analysis.get("metrics", {}),
+        "data_quality": analysis.get("data_quality", {}),
+        "period_comparison": analysis.get("period_comparison", {}),
+        "analysis": analysis,
         "diagnoses": analysis_context.get("diagnoses", []),
         "top_diagnoses": analysis_context.get("top_diagnoses", []),
         "diagnosis_chains": analysis_context.get("diagnosis_chains", []),
