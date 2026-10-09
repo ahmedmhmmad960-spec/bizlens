@@ -43,7 +43,7 @@ export default function AskBizLens({ analysis, onBack, onContinue }: Props) {
       <p className="insight-intro">Answers are grounded in the analysis already performed. If the data cannot support an answer, BizLens says so.</p>
       <section className="ask-box"><label htmlFor="bizlens-question">Your question</label><textarea id="bizlens-question" value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} /><button className="button primary" onClick={ask} disabled={loading}>{loading ? "Thinking…" : "Ask BizLens"} <span>→</span></button></section>
       {error && <div className="ask-error">{error}</div>}
-      {answer && <section className="answer-card"><span className="flow-kicker">Evidence-backed answer</span><h2>{answer}</h2>{evidence.length ? <div className="answer-evidence">{evidence.map((item, index) => <div key={`${item}-${index}"><span>Evidence</span><strong>{item}</strong></div>)}</div> : null}</section>}
+      {answer && <section className="answer-card"><span className="flow-kicker">Evidence-backed answer</span><h2>{answer}</h2>{evidence.length ? <div className="answer-evidence">{evidence.map((item, index) => <div key={`${item}-${index}`}><span>Evidence</span><strong>{item}</strong></div>)}</div> : null}</section>}
       <div className="insight-actions"><button className="button secondary" onClick={onBack}>Back</button><button className="button primary" onClick={onContinue}>Business report <span>→</span></button></div>
     </div>
   </main>;
