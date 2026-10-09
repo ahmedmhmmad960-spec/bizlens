@@ -1,5 +1,5 @@
-from uuid import uuid4
 from typing import Any
+from uuid import uuid4
 
 import pandas as pd
 
@@ -34,10 +34,7 @@ class AnalysisService:
         top_diagnoses = rank_diagnoses(diagnoses, limit=3)
         diagnosis_chains = build_diagnosis_chains(diagnoses)
         evidence = [
-            {
-                "diagnosis": diagnosis.get("diagnosis"),
-                "evidence": build_evidence(diagnosis),
-            }
+            {"diagnosis": diagnosis.get("diagnosis"), "evidence": build_evidence(diagnosis)}
             for diagnosis in diagnoses
         ]
         what_changed = build_what_changed(result.get("period_comparison", {}))
@@ -63,7 +60,7 @@ class AnalysisService:
         )
 
         analysis_id = str(uuid4())
-        payload = {
+        return {
             "success": True,
             "analysis_id": analysis_id,
             "analysis": result,
@@ -76,7 +73,6 @@ class AnalysisService:
             "business_report": business_report,
             "demo_replay": demo_replay,
         }
-        return payload
 
     @staticmethod
     def _detect_diagnoses(df: pd.DataFrame, result: dict[str, Any]) -> list[dict[str, Any]]:
@@ -84,13 +80,12 @@ class AnalysisService:
         period_comparison = result.get("period_comparison")
 
         if period_comparison:
-            detectors = (
+            for detector in (
                 detect_margin_decline,
                 detect_revenue_up_profit_down,
                 detect_cost_pressure,
                 detect_discount_pressure,
-            )
-            for detector in detectors:
+            ):
                 diagnosis = detector(period_comparison)
                 if diagnosis:
                     diagnoses.append(diagnosis)
@@ -114,9 +109,6 @@ class AnalysisService:
 
     def _build_ai_explanations(self, diagnoses: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
-            {
-                "diagnosis": diagnosis.get("diagnosis"),
-                "ai": self.ai_provider.explain(diagnosis),
-            }
+            {"diagnosis": diagnosis.get("diagnosis"), "ai": self.ai_provider.explain(diagnosis)}
             for diagnosis in diagnoses
         ]
