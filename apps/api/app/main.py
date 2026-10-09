@@ -1,10 +1,10 @@
 import os
 from typing import Any
 
+import pandas as pd
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
-import pandas as pd
 
 from ai.client.openai_provider import OpenAIProvider
 from ai.client.rule_based_provider import RuleBasedProvider
@@ -20,23 +20,14 @@ app = FastAPI(
 
 api_key = os.getenv("OPENAI_API_KEY")
 ai_model = os.getenv("BIZLENS_AI_MODEL")
-
-if api_key and ai_model:
-    ai_provider = OpenAIProvider()
-else:
-    ai_provider = RuleBasedProvider()
-
+ai_provider = OpenAIProvider() if api_key and ai_model else RuleBasedProvider()
 analysis_service = AnalysisService(ai_provider)
 analysis_store: dict[str, dict[str, Any]] = {}
 
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {
-        "name": "BizLens",
-        "version": "0.1.0",
-        "status": "running",
-    }
+    return {"name": "BizLens", "version": "0.1.0", "status": "running"}
 
 
 @app.get("/health")
@@ -53,10 +44,7 @@ class AskRequest(BaseModel):
 async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
     filename = file.filename or ""
     if not filename.lower().endswith(".csv"):
-        return {
-            "success": False,
-            "error": "Only CSV files are supported.",
-        }
+        return {"success": False, "error": "Only CSV files are supported."}
 
     try:
         df = pd.read_csv(file.file)
@@ -64,28 +52,18 @@ async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
         analysis_store[payload["analysis_id"]] = payload
         return payload
     except (ValueError, pd.errors.ParserError) as error:
-        return {
-            "success": False,
-            "error": str(error),
-        }
+        return {"success": False, "error": str(error)}
 
 
 @app.post("/ask")
 async def ask(request: AskRequest) -> dict[str, Any]:
     question = request.question.strip()
-
     if not question:
-        return {
-            "success": False,
-            "error": "Question cannot be empty.",
-        }
+        return {"success": False, "error": "Question cannot be empty."}
 
     analysis_context = analysis_store.get(request.analysis_id)
     if analysis_context is None:
-        return {
-            "success": False,
-            "error": "Analysis not found or expired.",
-        }
+        return {"success": False, "error": "Analysis not found or expired."}
 
     analysis = analysis_context.get("analysis", {})
     context = {
@@ -102,14 +80,6 @@ async def ask(request: AskRequest) -> dict[str, Any]:
 
     try:
         result = ai_provider.ask(question, context)
-        return {
-            "success": True,
-            "analysis_id": request.analysis_id,
-            "question": question,
-            "answer": result,
-        }
+        return {"success": True, "analysis_id": request.analysis_id, "question": question, "answer": result}
     except Exception as error:
-        return {
-            "success": False,
-            "error": str(error),
-        }
+        return {"success": False, "error": str(error)}
