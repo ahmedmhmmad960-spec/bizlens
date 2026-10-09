@@ -74,7 +74,9 @@ def build_demo_replay(
             "step": 8,
             "key": "ai_explanation",
             "title": "Explaining what it means",
-            "description": "The AI explanation layer translated the evidence into clear business language.",
+            "description": (
+                "The AI explanation layer translated the evidence into clear business language."
+            ),
             "data": ai_explanations,
         },
         {
