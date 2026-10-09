@@ -29,7 +29,7 @@ def test_analysis_service_returns_complete_contract() -> None:
     assert result["analysis"]["metrics"]["revenue"] == 1460
     assert isinstance(result["diagnoses"], list)
     assert len(result["top_diagnoses"]) <= 3
-    assert len(result["demo_replay"]) == 10
+    assert result["demo_replay"]["total_steps"] == 10
     assert result["business_report"]
 
 
