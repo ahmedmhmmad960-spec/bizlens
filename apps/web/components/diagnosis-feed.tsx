@@ -1,97 +1,103 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Diagnosis } from "@/lib/api";
-import "./diagnosis-feed.css";
 
-type DiagnosisFeedProps = {
-  diagnoses: Diagnosis[];
-  onBack: () => void;
-};
+type DiagnosisFeedProps = { diagnoses: Diagnosis[]; onBack: () => void; onContinue?: () => void };
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "Not available";
-  if (typeof value === "number") return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+type EvidenceRow = { label: string; value: string; tone: "positive" | "critical" | "warning" | "info" | "neutral" };
+
+function text(value: unknown, fallback = "Not available") {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
 
-function humanize(key: string): string {
-  return key.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function entries(diagnosis: Diagnosis): EvidenceRow[] {
+  const raw = diagnosis.evidence;
+  if (!raw || typeof raw !== "object") return [];
+  return Object.entries(raw)
+    .filter(([key]) => !["confidence", "confidence_score", "limitations"].includes(key))
+    .slice(0, 6)
+    .map(([label, value]) => ({
+      label: label.replaceAll("_", " "),
+      value: text(value),
+      tone: /cost|loss|margin|profit|discount/i.test(label) ? "critical" : /revenue|order/i.test(label) ? "positive" : "neutral",
+    }));
 }
 
-function severityLabel(severity?: string) {
-  if (severity === "high") return "High priority";
-  if (severity === "medium") return "Medium priority";
-  return "Signal";
+function confidenceLevel(diagnosis: Diagnosis) {
+  return diagnosis.confidence ? `${diagnosis.confidence[0].toUpperCase()}${diagnosis.confidence.slice(1)}` : "Not available";
 }
 
-function evidenceEntries(diagnosis: Diagnosis) {
-  const evidence = diagnosis.evidence;
-  if (!evidence || typeof evidence !== "object") return [];
-  return Object.entries(evidence).filter(([key]) => !["confidence", "confidence_score", "limitations"].includes(key));
+function impact(diagnosis: Diagnosis) {
+  const raw = diagnosis.impact;
+  if (!raw || typeof raw !== "object") return { title: "Impact", value: "Not available", detail: "The current data does not support an impact estimate." };
+  return {
+    title: raw.state === "estimated" ? "Estimated impact" : "Impact",
+    value: text(raw.summary ?? raw.value ?? raw.state, "Not available"),
+    detail: text(raw.supporting_text ?? raw.supportingText, raw.state === "insufficient" ? "More data is required." : "Based on the analyzed data."),
+  };
 }
 
-function ShowMeWhyDialog({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () => void }) {
-  const entries = evidenceEntries(diagnosis);
-  const confidence = diagnosis.confidence || "Not available";
-  const limitations = diagnosis.limitations || [];
+function ShowMeWhy({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const rows = entries(diagnosis);
+  const impactState = impact(diagnosis);
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = previous; };
+  }, [onClose]);
 
-  return (
-    <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="why-dialog" role="dialog" aria-modal="true" aria-labelledby="why-title" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="dialog-header">
-          <div>
-            <span className="flow-kicker">Evidence view</span>
-            <h2 id="why-title">Why BizLens found this</h2>
-            <p>{diagnosis.diagnosis}</p>
-          </div>
-          <button className="dialog-close" type="button" onClick={onClose} aria-label="Close evidence view">×</button>
-        </div>
+  const steps = [
+    ["Signal", diagnosis.explanation || diagnosis.diagnosis, "Observed"],
+    ["Calculation", rows.slice(0, 4), ""],
+    ["Evidence", rows, "Observed"],
+    ["What this suggests", diagnosis.explanation || "This is an evidence-backed signal worth investigating.", "Based on your data"],
+    [impactState.title, `${impactState.value} — ${impactState.detail}`, impactState.title === "Estimated impact" ? "Estimated" : ""],
+    ["Confidence", `${confidenceLevel(diagnosis)}${diagnosis.confidence_score !== undefined ? ` · ${Math.round(diagnosis.confidence_score * 100)} / 100` : ""}`, ""],
+    ["Recommended action", diagnosis.recommended_action || text(diagnosis.action?.summary ?? diagnosis.action?.text, "Review the evidence and decide on the next business action."), ""],
+  ] as const;
 
-        <div className="reasoning-list">
-          <ReasoningStep number="01" title="Signal"><p>{diagnosis.explanation || diagnosis.description || "BizLens detected a meaningful business signal."}</p></ReasoningStep>
-          <ReasoningStep number="02" title="Calculation"><div className="evidence-grid">{entries.length ? entries.slice(0, 4).map(([key, value]) => <div className="evidence-item" key={key}><span>{humanize(key)}</span><strong>{formatValue(value)}</strong></div>) : <div className="evidence-empty">No structured calculation was returned for this diagnosis.</div>}</div></ReasoningStep>
-          <ReasoningStep number="03" title="Evidence"><div className="evidence-source"><span className="trust-badge">Observed</span><span>Based on the analyzed business data</span></div></ReasoningStep>
-          <ReasoningStep number="04" title="What this suggests"><p>{diagnosis.explanation || "This signal indicates an area worth investigating."}</p><span className="trust-badge">Possible driver</span></ReasoningStep>
-          <ReasoningStep number="05" title="Impact"><p>{formatValue(diagnosis.impact?.summary || diagnosis.impact?.value || diagnosis.impact)}</p></ReasoningStep>
-          <ReasoningStep number="06" title="Confidence"><div className="confidence-row"><strong>{confidence}</strong>{typeof diagnosis.confidence_score === "number" ? <span>{Math.round(diagnosis.confidence_score)} / 100</span> : null}</div>{limitations.length ? <p className="dialog-muted">{limitations.join(" ")}</p> : null}</ReasoningStep>
-          <ReasoningStep number="07" title="Recommended action"><p>{diagnosis.recommended_action || diagnosis.action?.summary || diagnosis.action?.text || "Review the evidence and decide on the next business action."}</p></ReasoningStep>
-        </div>
-
-        <div className="dialog-footer"><button className="button secondary" type="button" onClick={onClose}>Close evidence view</button></div>
-      </section>
-    </div>
-  );
-}
-
-function ReasoningStep({ number, title, children }: { number: string; title: string; children: ReactNode }) {
-  return <article className="reasoning-step"><span className="reasoning-number">{number}</span><div><h3>{title}</h3>{children}</div></article>;
-}
-
-export default function DiagnosisFeed({ diagnoses, onBack }: DiagnosisFeedProps) {
-  const [selected, setSelected] = useState<Diagnosis | null>(null);
-  const top = useMemo(() => diagnoses.slice(0, 3), [diagnoses]);
-
-  return (
-    <main className="diagnosis-page">
-      <header className="flow-header"><div className="logo"><span className="logo-mark" aria-hidden="true"><span /></span><span>BizLens</span></div><span className="flow-label">Diagnosis</span></header>
-      <div className="diagnosis-content">
-        <button className="flow-back" type="button" onClick={onBack}>← Back</button>
-        <section className="diagnosis-hero"><div><span className="flow-kicker">Business diagnosis</span><h1>Here is what deserves your attention.</h1><p>Every signal below is tied to evidence from the data you analyzed.</p></div><span className="diagnosis-count">{top.length} priority signals</span></section>
-
-        {top.length === 0 ? <section className="empty-diagnosis"><h2>No supported diagnosis found.</h2><p>BizLens did not find a strong enough signal to present as a priority finding.</p></section> : <section className="diagnosis-list" aria-label="Business diagnoses">
-          {top.map((diagnosis, index) => <article className="diagnosis-card" key={`${diagnosis.diagnosis}-${index}`}>
-            <div className="diagnosis-card-top"><span className={`severity severity-${diagnosis.severity || "signal"}`}>{severityLabel(diagnosis.severity)}</span><span className="confidence-mini">Confidence · {diagnosis.confidence || "Not available"}</span></div>
-            <h2>{diagnosis.diagnosis}</h2>
-            <p className="diagnosis-explanation">{diagnosis.explanation || diagnosis.description || "BizLens found a meaningful signal in your business data."}</p>
-            <div className="diagnosis-evidence-preview">{evidenceEntries(diagnosis).slice(0, 3).map(([key, value]) => <div key={key}><span>{humanize(key)}</span><strong>{formatValue(value)}</strong></div>)}</div>
-            <div className="diagnosis-card-footer"><span className="impact-label">Impact {formatValue(diagnosis.impact?.summary || diagnosis.impact?.value || "Review")}</span><button className="button secondary" type="button" onClick={() => setSelected(diagnosis)}>Show me why <span>→</span></button></div>
-          </article>)}
-        </section>}
-
-        <div className="diagnosis-next"><div><span className="flow-kicker">Next</span><h2>Turn evidence into action.</h2><p>Recommended actions stay attached to the diagnosis that supports them.</p></div><button className="button primary" type="button" onClick={() => top[0] && setSelected(top[0])}>Review first diagnosis <span>→</span></button></div>
+  return <div className="dialog-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <aside className="why-dialog" role="dialog" aria-modal="true" aria-labelledby="why-title">
+      <header className="dialog-header"><div><span className="flow-kicker">{diagnosis.category || "Business case"} · Evidence view</span><h2 id="why-title">{diagnosis.diagnosis}</h2></div><button ref={closeRef} className="dialog-close" onClick={onClose} aria-label="Close evidence view">×</button></header>
+      <div className="reasoning-list">
+        {steps.map(([title, content, badge], index) => <article className="reasoning-step" key={title}><div className="reasoning-rail"><span>{index + 1}</span>{index < steps.length - 1 && <i />}</div><div><div className="reasoning-title"><h3>{title}</h3>{badge && <span className="trust-badge">{badge}</span>}</div>{Array.isArray(content) ? <div className="evidence-grid">{content.map((row) => <div className="evidence-item" key={`${row.label}-${row.value}`}><span>{row.label}</span><strong className={`tone-${row.tone}`}>{row.value}</strong></div>)}</div> : <p>{content}</p>}</div></article>)}
       </div>
-      {selected ? <ShowMeWhyDialog diagnosis={selected} onClose={() => setSelected(null)} /> : null}
-    </main>
-  );
+      {diagnosis.limitations?.length ? <div className="dialog-limitation"><strong>Limitation</strong><p>{diagnosis.limitations.join(" ")}</p></div> : null}
+      <footer className="dialog-footer"><button className="button secondary" onClick={onClose}>Close evidence view</button></footer>
+    </aside>
+  </div>;
+}
+
+export default function DiagnosisFeed({ diagnoses, onBack, onContinue }: DiagnosisFeedProps) {
+  const [selected, setSelected] = useState<Diagnosis | null>(null);
+  const top = useMemo(() => diagnoses.slice(0, 5), [diagnoses]);
+
+  return <main className="diagnosis-page">
+    <header className="flow-header"><div className="logo"><span className="logo-mark" aria-hidden="true"><span /></span><span>BizLens</span></div><span className="flow-label">Diagnosis</span></header>
+    <div className="diagnosis-content">
+      <button className="flow-back" onClick={onBack}>← Back</button>
+      <section className="diagnosis-hero"><div><span className="flow-kicker">Business diagnosis</span><h1>Here is what deserves your attention.</h1><p>Every finding is connected to measurable evidence from the data you analyzed.</p></div><span className="diagnosis-count">{top.length} findings</span></section>
+      <section className="diagnosis-list" aria-label="Business diagnoses">
+        {top.map((diagnosis, index) => { const rows = entries(diagnosis); const imp = impact(diagnosis); return <article className="diagnosis-card-v2" key={diagnosis.id ?? diagnosis.code ?? index}>
+          <header className="diagnosis-card-header"><div><span className="diagnosis-category">{diagnosis.category || "Business signal"}</span><span className={`priority-label tone-${diagnosis.severity === "high" ? "critical" : "warning"}`}>{diagnosis.severity === "high" ? "High priority" : "Needs attention"}</span></div><h2>{diagnosis.diagnosis}</h2></header>
+          <section className="diagnosis-signal"><span className="section-label">Key signal</span><strong>{text(diagnosis.key_signal ?? diagnosis.signal, diagnosis.explanation || "Meaningful business signal detected")}</strong><span className="trust-badge">Observed</span></section>
+          <section className="evidence-block-v2"><span className="section-label">What changed</span><div className="evidence-list">{rows.slice(0, 3).map((row) => <div className="evidence-row" key={row.label}><span>{row.label}</span><strong className={`tone-${row.tone}`}>{row.value}</strong></div>)}</div></section>
+          <section className="evidence-block-v2"><span className="section-label">Evidence</span><div className="evidence-list">{rows.slice(3).map((row) => <div className="evidence-row" key={row.label}><span>{row.label}</span><strong className={`tone-${row.tone}`}>{row.value}</strong></div>)}{rows.length === 0 && <p className="dialog-muted">No supporting evidence is available.</p>}</div></section>
+          <section className="impact-state"><span className="section-label">{imp.title}</span><strong>{imp.value}</strong><p>{imp.detail}</p></section>
+          <section className="diagnosis-confidence"><span className="section-label">Confidence</span><div className="confidence-heading"><span className="confidence-bars">{[1,2,3].map((bar) => <i key={bar} className={bar <= (diagnosis.confidence === "high" ? 3 : diagnosis.confidence === "medium" ? 2 : 1) ? "active" : ""} />)}</span><strong>{confidenceLevel(diagnosis)}</strong></div><p>{diagnosis.limitations?.[0] || "Based on the available evidence in the analyzed period."}</p></section>
+          <section className="recommended-action"><span className="section-label">Recommended action</span><h4>{diagnosis.recommended_action || "Review the evidence behind this finding."}</h4></section>
+          <footer className="diagnosis-card-footer"><button className="show-why-button" onClick={() => setSelected(diagnosis)} aria-haspopup="dialog">Show me why <span>→</span></button></footer>
+        </article>; })}
+      </section>
+      <div className="diagnosis-next"><div><span className="flow-kicker">Next</span><h2>Understand what changed.</h2><p>Trace the period comparison before asking BizLens what to do next.</p></div><button className="button primary" onClick={onContinue}>What changed <span>→</span></button></div>
+    </div>
+    {selected ? <ShowMeWhy diagnosis={selected} onClose={() => setSelected(null)} /> : null}
+  </main>;
 }
