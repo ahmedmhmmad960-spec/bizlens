@@ -41,7 +41,7 @@ class AskRequest(BaseModel):
 
 
 @app.post("/analyze")
-async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
+async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
     filename = file.filename or ""
     if not filename.lower().endswith(".csv"):
         return {"success": False, "error": "Only CSV files are supported."}
