@@ -3,8 +3,14 @@
 import { useMemo } from "react";
 import type { AnalysisResponse, Diagnosis } from "@/lib/api";
 
+function text(value: unknown, fallback = "—") {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
 function number(value: unknown, suffix = "") {
-  if (typeof value !== "number") return "—";
+  if (typeof value !== "number") return text(value);
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}${suffix}`;
 }
 
@@ -43,16 +49,16 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
         <p className="overview-intro">A concise view of the business picture before we move into the diagnoses that deserve your attention.</p>
 
         <section className="overview-snapshot" aria-label="Business snapshot">
-          <div><span>Revenue</span><strong>{typeof revenue === "number" ? number(revenue) : "Available"}</strong><small>Observed</small></div>
-          <div><span>Gross profit</span><strong>{typeof grossProfit === "number" ? number(grossProfit) : "Available"}</strong><small>Observed</small></div>
-          <div><span>Gross margin</span><strong>{typeof margin === "number" ? number(margin, "%") : "Available"}</strong><small>Observed</small></div>
+          <div><span>Revenue</span><strong>{number(revenue)}</strong><small>Observed</small></div>
+          <div><span>Gross profit</span><strong>{number(grossProfit)}</strong><small>Observed</small></div>
+          <div><span>Gross margin</span><strong>{number(margin, "%")}</strong><small>Observed</small></div>
           <div><span>Orders</span><strong>{number(orders)}</strong><small>Observed</small></div>
         </section>
 
         <section className="executive-summary">
           <div>
             <span className="category">Executive summary</span>
-            <h2>{diagnoses.length ? diagnoses[0].diagnosis : "BizLens found no high-confidence diagnosis."}</h2>
+            <h2>{diagnoses.length ? text(diagnoses[0].diagnosis) : "BizLens found no high-confidence diagnosis."}</h2>
             <p>{diagnoses.length ? "The strongest signal is shown first. The next step is to inspect the evidence behind each finding." : "The available data did not support a strong conclusion."}</p>
           </div>
           <div className="summary-meta">
@@ -67,8 +73,8 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
             {diagnoses.map((diagnosis: Diagnosis, index) => (
               <article key={diagnosis.id ?? diagnosis.code ?? index} className="overview-finding">
                 <span className="finding-index">0{index + 1}</span>
-                <div><span className="finding-category">{diagnosis.severity || diagnosis.category || "Business signal"}</span><h3>{diagnosis.title || diagnosis.diagnosis}</h3><p>{diagnosis.explanation || diagnosis.description || "Evidence is available in the diagnosis view."}</p></div>
-                <span className="finding-confidence">{diagnosis.confidence || "Reviewed"}</span>
+                <div><span className="finding-category">{text(diagnosis.severity || diagnosis.category, "Business signal")}</span><h3>{text(diagnosis.title || diagnosis.diagnosis)}</h3><p>{text(diagnosis.explanation || diagnosis.description, "Evidence is available in the diagnosis view.")}</p></div>
+                <span className="finding-confidence">{text(diagnosis.confidence, "Reviewed")}</span>
               </article>
             ))}
           </div>
