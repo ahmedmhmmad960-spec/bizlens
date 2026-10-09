@@ -59,7 +59,7 @@ function ShowMeWhy({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () =
     ["What this suggests", text(diagnosis.explanation, "This is an evidence-backed signal worth investigating."), "Based on your data"],
     [impactState.title, `${impactState.value} — ${impactState.detail}`, impactState.title === "Estimated impact" ? "Estimated" : ""],
     ["Confidence", `${confidenceLevel(diagnosis)}${diagnosis.confidence_score !== undefined ? ` · ${Math.round(diagnosis.confidence_score * 100)} / 100` : ""}`, ""],
-    ["Recommended action", text(diagnosis.recommended_action || diagnosis.action?.summary ?? diagnosis.action?.text, "Review the evidence and decide on the next business action."), ""],
+    ["Recommended action", text(diagnosis.recommended_action || (diagnosis.action?.summary ?? diagnosis.action?.text), "Review the evidence and decide on the next business action."), ""],
   ] as const;
 
   return <div className="dialog-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
