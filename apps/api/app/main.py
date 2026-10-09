@@ -80,6 +80,12 @@ async def ask(request: AskRequest) -> dict[str, Any]:
 
     try:
         result = ai_provider.ask(question, context)
-        return {"success": True, "analysis_id": request.analysis_id, "question": question, "answer": result}
+        response = {
+            "success": True,
+            "analysis_id": request.analysis_id,
+            "question": question,
+            "answer": result,
+        }
+        return response
     except Exception as error:
         return {"success": False, "error": str(error)}
