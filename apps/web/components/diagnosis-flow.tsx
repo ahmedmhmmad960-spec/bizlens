@@ -24,7 +24,7 @@ function Icon({ name, size = 18 }: { name: "arrow" | "upload" | "check" | "file"
     upload: <><path d="M12 16V4M7 9l5-5 5 5" /><path d="M5 20h14" /></>,
     check: <path d="m5 12 4 4L19 6" />,
     file: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>,
-    spark: <><path d="m12 3 1.3 4.2L17 8.5l-3.7 1.8L12 15l-1.3-4.7L7 8.5l3.7-1.3z" /><path d="m18.5 14 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z" /></>,
+    spark: <><path d="m12 3 1.3 4.2L17 8.5l-3.7 1.8L12 15l-1.3-4.7L7 8.5l3.7-1.3z" /><path d="m18.5 14 .7 2.3 2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z" /></>,
     lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
     back: <><path d="M19 12H5M11 18l-6-6 6-6" /></>,
   };
@@ -54,7 +54,7 @@ function FlowShell({ step, children, onBack }: { step: number; children: ReactNo
       </header>
       <div className="flow-content">
         <button className="flow-back" type="button" onClick={onBack}><Icon name="back" size={16} /> Back</button>
-        <div className="flow-progress"><span style={{ width: `${step * 25}%` }} /></div>
+        <div className="flow-progress" aria-label={`Diagnosis progress: ${step} of 4`}><span style={{ width: `${Math.min(step, 4) * 25}%` }} /></div>
         {children}
       </div>
     </main>
@@ -80,6 +80,12 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
     if (!selected) return;
     if (!selected.name.toLowerCase().endsWith(".csv")) {
       setError("Please upload a CSV file with one row per order or line item.");
+      setFile(null);
+      setFileName(null);
+      return;
+    }
+    if (selected.size > 50 * 1024 * 1024) {
+      setError("This file is larger than 50 MB. Please choose a smaller CSV.");
       setFile(null);
       setFileName(null);
       return;
@@ -197,29 +203,48 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
   if (!analysis) return null;
 
   if (screen === "understand") {
-    const items = [["Orders", formatNumber(metrics?.orders)], ["Date range", String(analysis.analysis.date_range || "Available")], ["Products", formatNumber(metrics?.products)], ["Customers", formatNumber(metrics?.customers)], ["Revenue", formatNumber(metrics?.revenue)], ["Cost data", quality?.has_cost ? "Available" : "Not available"], ["Discounts", quality?.has_discount ? "Available" : "Not available"]];
+    const items = [
+      ["Orders", formatNumber(metrics?.orders)],
+      ["Date range", String(analysis.analysis.date_range || "Available")],
+      ["Products", formatNumber(metrics?.products)],
+      ["Customers", formatNumber(metrics?.customers)],
+      ["Revenue", formatNumber(metrics?.revenue)],
+      ["Cost data", quality?.has_cost ? "Available" : "Not available"],
+      ["Discounts", quality?.has_discount ? "Available" : "Not available"],
+      ["Data status", analysis.success ? "Verified" : "Needs review"],
+    ];
     const hasCost = Boolean(quality?.has_cost);
     return <FlowShell step={progress} onBack={back}>
-      <section className="flow-hero compact"><Badge>Step 3 of 4</Badge><h1>Understanding your business</h1><p>We mapped the columns in your file into a clear business picture.</p></section>
-      <div className="snapshot-layout"><section className="snapshot-card"><div className="card-title"><div><span className="category">Business snapshot</span><h2>Online store orders</h2></div><Badge tone="positive">Ready</Badge></div><div className="snapshot-grid">{items.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><Icon name="check" size={14} /></div>)}</div></section><aside className="understanding-note"><span className="question-icon"><Icon name="spark" /></span><span className="category">What we can see</span><h3>This is an ecommerce sales dataset.</h3><p>BizLens uses the fields actually present in your file to decide what it can safely diagnose.</p></aside></div>
+      <section className="flow-hero compact"><Badge>Step 3 of 4</Badge><h1>Understanding your business</h1><p>Before diagnosing anything, BizLens maps the file into a business picture and checks which conclusions are actually supported.</p></section>
+      <div className="snapshot-layout"><section className="snapshot-card"><div className="card-title"><div><span className="category">Business snapshot</span><h2>Online store orders</h2></div><Badge tone="positive">Verified</Badge></div><div className="snapshot-grid">{items.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><Icon name="check" size={14} /></div>)}</div></section><aside className="understanding-note"><span className="question-icon"><Icon name="spark" /></span><span className="category">What we can safely see</span><h3>BizLens only diagnoses signals supported by the uploaded data.</h3><p>Available fields determine which metrics, diagnoses, impacts, and recommendations can be shown.</p></aside></div>
       <div className={`interpretation ${hasCost ? "" : "warning"}`}><span>{hasCost ? "✓" : "!"}</span><div><strong>{hasCost ? "Profitability analysis is available." : "Profitability analysis is limited."}</strong><p>{hasCost ? "Revenue and cost fields are present, so BizLens can evaluate gross profit and margin." : "No cost field was found, so BizLens will avoid unsupported profitability findings."}</p></div></div>
       <div className="flow-actions"><Button onClick={next} icon="arrow">Check data quality</Button></div>
     </FlowShell>;
   }
 
   if (screen === "quality") {
+    const rows = Number(quality?.duplicate_rows ?? 0);
+    const missing = Number(quality?.missing_values ?? 0);
+    const hasDate = Boolean(quality?.has_date);
+    const qualityLabel = rows === 0 && missing === 0 && hasDate ? "Strong data quality" : "Review recommended";
     return <FlowShell step={progress} onBack={back}>
-      <section className="flow-hero compact"><Badge>Step 4 of 4</Badge><h1>Your data is ready for diagnosis.</h1><p>BizLens uses the actual dataset quality to determine how much confidence each diagnosis deserves.</p></section>
-      <section className="quality-card"><div className="quality-row"><span>Rows analyzed</span><strong className="positive">{formatNumber(analysis.analysis.rows)}</strong><b>✓</b></div><div className="quality-row"><span>Missing values</span><strong>{formatNumber(quality?.missing_values)}</strong><b>✓</b></div><div className="quality-row"><span>Duplicate rows</span><strong>{formatNumber(quality?.duplicate_rows)}</strong><b>✓</b></div><div className="quality-row"><span>Date coverage</span><strong>{quality?.has_date ? "Available" : "Not available"}</strong><b>{quality?.has_date ? "✓" : "!"}</b></div></section>
-      <div className="quality-note"><strong>Why this matters</strong><p>Confidence depends on data completeness, sample size, signal strength, and historical coverage.</p></div>
+      <section className="flow-hero compact"><Badge tone={qualityLabel === "Strong data quality" ? "positive" : "warning"}>Step 4 of 4</Badge><h1>{qualityLabel === "Strong data quality" ? "Your data is ready for diagnosis." : "A few data quality signals need attention."}</h1><p>BizLens uses data quality as part of its confidence model, so weak inputs do not become overconfident conclusions.</p></section>
+      <section className="quality-card">
+        <div className="quality-row"><span>Rows analyzed</span><strong className="positive">{formatNumber(analysis.analysis.rows)}</strong><b className="quality-ok">✓</b></div>
+        <div className="quality-row"><span>Missing values</span><strong>{formatNumber(quality?.missing_values)}</strong><b className={missing ? "quality-warn" : "quality-ok"}>{missing ? "!" : "✓"}</b></div>
+        <div className="quality-row"><span>Duplicate rows</span><strong>{formatNumber(quality?.duplicate_rows)}</strong><b className={rows ? "quality-warn" : "quality-ok"}>{rows ? "!" : "✓"}</b></div>
+        <div className="quality-row"><span>Date coverage</span><strong>{hasDate ? "Available" : "Not available"}</strong><b className={hasDate ? "quality-ok" : "quality-warn"}>{hasDate ? "✓" : "!"}</b></div>
+      </section>
+      <div className={`quality-note ${qualityLabel === "Strong data quality" ? "" : "warning"}`}><strong>Why this matters</strong><p>Confidence depends on completeness, sample size, signal strength, and historical coverage. BizLens keeps those limitations visible instead of hiding them.</p></div>
       <div className="flow-actions"><Button onClick={next} icon="arrow">Review analysis</Button></div>
     </FlowShell>;
   }
 
   const step = replaySteps[replayIndex];
   const stepDescription = String(currentReplayStep?.description || "BizLens is working through the verified business evidence.");
+  const replayPercent = Math.round(((replayIndex + 1) / replaySteps.length) * 100);
   return <FlowShell step={4} onBack={back}>
-    <section className="replay-screen"><Badge tone="accent">Step 5 · Analysis</Badge><h1>Building your business diagnosis</h1><p>BizLens is checking each signal against your data before drawing a conclusion.</p><div className="replay-card">{replaySteps.map((item, index) => { const done = index < replayIndex; const active = index === replayIndex; return <div className={`replay-row ${done ? "done" : ""} ${active ? "active" : ""}`} key={`${item}-${index}`}><span>{done ? <Icon name="check" size={13} /> : index + 1}</span><strong>{item}</strong>{active ? <small>Working…</small> : null}</div>; })}</div><div className="replay-status"><span className="replay-dot" />{step}<small>{stepDescription}</small></div><div className="flow-actions"><Button onClick={() => replayIndex < replaySteps.length - 1 ? setReplayIndex((value) => value + 1) : onComplete(analysis)}>{replayIndex < replaySteps.length - 1 ? "Continue analysis" : "View diagnosis"} <span>→</span></Button></div></section>
+    <section className="replay-screen"><Badge tone="accent">Analysis replay</Badge><h1>Building your business diagnosis</h1><p>Watch BizLens move from raw data to evidence-backed conclusions.</p><div className="premium-replay-progress" aria-label={`Analysis progress: ${replayPercent}%`}><span style={{ width: `${replayPercent}%` }} /></div><div className="replay-insight"><span>Current step</span><strong>{stepDescription}</strong></div><div className="replay-card">{replaySteps.map((item, index) => { const done = index < replayIndex; const active = index === replayIndex; return <div className={`replay-row ${done ? "done" : ""} ${active ? "active" : ""}`} key={`${item}-${index}`}><span>{done ? <Icon name="check" size={13} /> : index + 1}</span><strong>{item}</strong>{active ? <small>Working…</small> : null}</div>; })}</div><div className="replay-status"><span className="replay-dot" />{step}<small>{replayPercent}%</small></div><div className="flow-actions"><Button onClick={() => replayIndex < replaySteps.length - 1 ? setReplayIndex((value) => value + 1) : onComplete(analysis)}>{replayIndex < replaySteps.length - 1 ? "Continue analysis" : "View business overview"} <span>→</span></Button></div></section>
   </FlowShell>;
 }
 
