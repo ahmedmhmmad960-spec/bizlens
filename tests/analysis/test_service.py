@@ -1,7 +1,6 @@
 from io import StringIO
 
 import pandas as pd
-
 from ai.client.rule_based_provider import RuleBasedProvider
 from core.analysis.service import AnalysisService
 
