@@ -53,40 +53,30 @@ export type AnalysisResponse = {
   };
 };
 
+export type AskResponse = {
+  success: true;
+  analysis_id: string;
+  question: string;
+  answer: unknown;
+};
+
 async function parseResponse(response: Response) {
   const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(payload?.error || `Request failed with status ${response.status}`);
-  }
-  if (!payload?.success) {
-    throw new Error(payload?.error || "BizLens could not analyze this file.");
-  }
+  if (!response.ok) throw new Error(payload?.error || `Request failed with status ${response.status}`);
+  if (!payload?.success) throw new Error(payload?.error || "BizLens could not complete this request.");
   return payload;
 }
 
 export async function analyzeCsv(file: File): Promise<AnalysisResponse> {
   const formData = new FormData();
   formData.append("file", file);
-
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    body: formData,
-  });
-
-  return parseResponse(response) as Promise<AnalysisResponse>;
+  return parseResponse(await fetch("/api/analyze", { method: "POST", body: formData })) as Promise<AnalysisResponse>;
 }
 
-export async function askBizLens(analysisId: string, question: string) {
-  const response = await fetch("/api/ask", {
+export async function askBizLens(analysisId: string, question: string): Promise<AskResponse> {
+  return parseResponse(await fetch("/api/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ analysis_id: analysisId, question }),
-  });
-
-  return parseResponse(response) as Promise<{
-    success: true;
-    analysis_id: string;
-    question: string;
-    answer: unknown;
-  }>;
+  })) as Promise<AskResponse>;
 }
