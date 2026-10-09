@@ -4,8 +4,8 @@ import type { AnalysisResponse } from "@/lib/api";
 
 type Props = { analysis: AnalysisResponse; onBack: () => void; onContinue: () => void };
 
-function value(v: unknown) {
-  if (v === null || v === undefined || v === "") return "Not available";
+function value(v: unknown, fallback = "Not available") {
+  if (v === null || v === undefined || v === "") return fallback;
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
