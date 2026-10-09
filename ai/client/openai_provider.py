@@ -54,7 +54,14 @@ class OpenAIProvider(AIProvider):
             model=self.model,
             instructions=SYSTEM_PROMPT,
             input=prompt,
-            text={"format": {"type": "json_schema", "name": "bizlens_explanation", "strict": True, "schema": schema}},
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "bizlens_explanation",
+                    "strict": True,
+                    "schema": schema,
+                }
+            },
         )
         return json.loads(response.output_text)
 
@@ -74,6 +81,13 @@ class OpenAIProvider(AIProvider):
             model=self.model,
             instructions=ASK_SYSTEM_PROMPT,
             input=prompt,
-            text={"format": {"type": "json_schema", "name": "bizlens_ask", "strict": True, "schema": schema}},
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "bizlens_ask",
+                    "strict": True,
+                    "schema": schema,
+                }
+            },
         )
         return json.loads(response.output_text)
