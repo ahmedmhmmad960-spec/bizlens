@@ -1,6 +1,7 @@
 # BizLens Unified Product Blueprint — Demo, Funder Roadmap & Code
 
-**Status:** proposed build specification; only explicitly verified existing capabilities should be called "implemented".  
+**Status:** full long-term product blueprint; **its original 6–8 minute demo sections predate the owner's approved 2026-10-14 Demo V1 scope**. Only explicitly verified existing capabilities should be called "implemented".  
+**CURRENT APPROVED V1 AND QUALITY BAR:** [Demo V1 & Engineering Excellence Charter](demo-v1-and-engineering-charter.md) — pre-funding release includes a small verified Base/USDC starter and developer toolkit as targets; full Decision Twin / Business Memory are later fundable milestones. This current approved charter supersedes the older demo sequence and implementation order below wherever they disagree.  
 **Date:** 2026-10-13  
 **Narrative:** Evidence-to-Outcome Decision Intelligence  
 **Core principle:** compute business facts deterministically; let AI interpret verified evidence but never silently invent numbers or causality.
