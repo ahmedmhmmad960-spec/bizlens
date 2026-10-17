@@ -5,7 +5,6 @@ import pandas as pd
 from ai.client.rule_based_provider import RuleBasedProvider
 from core.analysis.service import AnalysisService
 
-
 DEMO_CSV = """order_id,date,customer_id,product_id,quantity,revenue,discount,cost
 1,2026-08-01,C001,P001,1,120,10,60
 2,2026-08-02,C002,P002,2,200,20,130
