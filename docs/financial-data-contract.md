@@ -84,12 +84,17 @@ must block a financial report. Keep it aligned with
   other products' revenue, an individual product's share of **net** total
   revenue can exceed 100%: this is a mathematical consequence, not a
   conventional market-share claim.
-- The current CSV reader may infer numeric types for identifiers that look
-  like numbers, potentially dropping their leading zeros **before**
-  validation. Source-preserving identifier ingestion is a separate required
-  gate. Currency codes, refunds, tax conventions, and multi-currency imports
-  remain future explicit contracts; this milestone is not tax-grade
-  accounting certification.
+- The FastAPI CSV boundary now reads columns as **source strings**
+  before validation, preserving leading zeros in order/product identifiers
+  and preventing binary-float parsing from erasing unsupported fractional
+  cents. This protects HTTP CSV imports; direct pandas DataFrame callers
+  must themselves preserve identifiers and decimal lexemes before calling
+  the analysis service.
+- This is **not** tax-grade accounting certification. Currency codes,
+  returns/refunds, tax conventions, the treatment of ID-shaped CSV
+  missing-value sentinels, and multi-currency imports remain explicit
+  future contracts. Product share is *share of net sales in this import*,
+  not externally verified market share.
 - Fail-closed validation is deliberate: the API should communicate a useful
   import error instead of presenting misleading zeroes or partial totals.
 
