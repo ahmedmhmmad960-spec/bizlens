@@ -4,6 +4,15 @@ import type { AnalysisResponse } from "@/lib/api";
 
 type Props = { analysis: AnalysisResponse; onBack: () => void };
 
+function summaryHeadline(value: unknown): string {
+  if (typeof value === "string" && value.trim()) return value;
+  if (value && typeof value === "object") {
+    const headline = (value as Record<string, unknown>).headline;
+    if (typeof headline === "string" && headline.trim()) return headline;
+  }
+  return "Evidence-backed findings and recommended next actions from your analyzed business data.";
+}
+
 function list(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => typeof item === "string" ? item : JSON.stringify(item));
@@ -18,7 +27,7 @@ export default function BusinessReport({ analysis, onBack }: Props) {
     <header className="flow-header"><div className="logo"><span className="logo-mark"><span /></span><span>BizLens</span></div><span className="flow-label">Business report</span></header>
     <div className="report-content">
       <button className="flow-back" onClick={onBack}>← Back</button>
-      <div className="report-cover"><span className="flow-kicker">BizLens · Business Diagnosis Report</span><h1>{String(report.title ?? "Your business diagnosis")}</h1><p>{String(report.summary ?? report.executive_summary ?? "Evidence-backed findings and recommended next actions from your analyzed business data.")}</p></div>
+      <div className="report-cover"><span className="flow-kicker">BizLens · Business Diagnosis Report</span><h1>{String(report.title ?? "Your business diagnosis")}</h1><p>{summaryHeadline(report.summary ?? report.executive_summary)}</p></div>
       <section className="report-section"><span className="section-label">Findings</span>{findings.length ? findings.map((item, index) => <article className="report-item" key={`${item}-${index}`}><span>0{index + 1}</span><p>{item}</p></article>) : analysis.top_diagnoses.slice(0, 3).map((item, index) => <article className="report-item" key={item.id ?? index}><span>0{index + 1}</span><p>{item.diagnosis}</p></article>)}</section>
       <section className="report-section"><span className="section-label">Recommended actions</span>{actions.length ? actions.map((item, index) => <article className="report-item action" key={`${item}-${index}`}><span>→</span><p>{item}</p></article>) : <div className="report-empty">Recommendations remain attached to each diagnosis.</div>}</section>
       {limitations.length ? <section className="report-section report-limitations"><span className="section-label">Limitations</span>{limitations.map((item, index) => <p key={`${item}-${index}`}>{item}</p>)}</section> : null}
