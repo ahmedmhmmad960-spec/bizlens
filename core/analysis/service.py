@@ -14,7 +14,7 @@ from core.diagnoses.high_revenue_low_profit_product import detect_high_revenue_l
 from core.diagnoses.margin_decline import detect_margin_decline
 from core.diagnoses.revenue_up_profit_down import detect_revenue_up_profit_down
 from core.evidence.engine import build_evidence
-from core.metrics.engine import analyze_dataframe
+from core.metrics.engine import analyze_prepared_sales, prepare_sales_dataframe
 from core.ranking.priority import rank_diagnoses
 from core.replay.engine import build_demo_replay
 from core.reports.engine import build_business_report
@@ -27,8 +27,10 @@ class AnalysisService:
         self.ai_provider = ai_provider
 
     def analyze_dataframe(self, df: pd.DataFrame) -> dict[str, Any]:
-        result = analyze_dataframe(df)
-        diagnoses = self._detect_diagnoses(df, result)
+        prepared = prepare_sales_dataframe(df)
+        result = analyze_prepared_sales(prepared)
+        # Product diagnoses must use the same validated numeric facts as metrics.
+        diagnoses = self._detect_diagnoses(prepared.frame, result)
         self._attach_confidence(diagnoses, result)
 
         top_diagnoses = rank_diagnoses(diagnoses, limit=3)
