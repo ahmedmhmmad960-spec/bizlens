@@ -51,7 +51,7 @@ through to the diagnosis and evidence payloads.
 - Confidence must not increase because `severity` changes from low to high;
   ranking can still prioritize a severe problem based on urgency.
 - Synthetic/demo fixtures should remain clearly identified.
-- Keep tests in `tests/confidence/test_engine.py` synchronized with any
+- Keep tests in `tests/confidence/test_confidence_engine.py` synchronized with any
   weight or interpretation change.
 
 ## Verification
