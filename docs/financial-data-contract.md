@@ -68,12 +68,28 @@ must block a financial report. Keep it aligned with
   row and per aggregated input field, to avoid falsely implying cent-level
   precision after conversion to floats in client code. Values exceeding the
   limit are rejected with a clear import error rather than distorted.
-- The numeric values used for legacy product-diagnosis calculations are
-  normalized to valid two-decimal amounts, but that diagnosis module still
-  uses pandas floating-point group reductions. Product-level threshold
-  precision needs its own integer-minor-unit refactor before accounting-grade
-  guarantees can be made. Currency codes, refunds, tax conventions, and
-  multi-currency imports remain future explicit contracts.
+- **Product diagnosis now uses exact minor-unit sums**, sharing the
+  `core.metrics.money` primitives with global, midpoint and quarterly
+  financial metrics. A present `product_id` must be nonblank on every sales
+  line and is normalized to trimmed string identifiers. A missing
+  `product_id` *column* remains optional, so product-specific diagnoses are
+  simply unavailable if the dataset has no product identifiers.
+- Product revenue share and gross margin are compared against the configured
+  thresholds using **unrounded integer-cent ratios**. Displayed percentages
+  are rounded only after the inclusion decision; two products both displaying
+  15.00% may legitimately fall on different sides of the actual threshold.
+  This prevents misleading false positive or false negative diagnoses.
+- A product with nonpositive net revenue has no meaningful positive-revenue
+  margin and is excluded from this particular diagnosis. When returns reduce
+  other products' revenue, an individual product's share of **net** total
+  revenue can exceed 100%: this is a mathematical consequence, not a
+  conventional market-share claim.
+- The current CSV reader may infer numeric types for identifiers that look
+  like numbers, potentially dropping their leading zeros **before**
+  validation. Source-preserving identifier ingestion is a separate required
+  gate. Currency codes, refunds, tax conventions, and multi-currency imports
+  remain future explicit contracts; this milestone is not tax-grade
+  accounting certification.
 - Fail-closed validation is deliberate: the API should communicate a useful
   import error instead of presenting misleading zeroes or partial totals.
 
