@@ -7,6 +7,7 @@ import "./demo-premium.css";
 import "./quarterly-trends.css";
 import "./observed-signals.css";
 import "./insight.css";
+import "./workspace.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
