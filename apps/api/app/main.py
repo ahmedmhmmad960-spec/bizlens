@@ -47,7 +47,9 @@ async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:  # noqa: B008
         return {"success": False, "error": "Only CSV files are supported."}
 
     try:
-        df = pd.read_csv(file.file)
+        # Preserve exact monetary lexemes and identifier leading zeros.
+        # The shared validation boundary handles numeric/date conversion.
+        df = pd.read_csv(file.file, dtype="string")
         payload = analysis_service.analyze_dataframe(df)
         analysis_store[payload["analysis_id"]] = payload
         return payload
