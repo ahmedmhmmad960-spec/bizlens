@@ -124,8 +124,9 @@ def test_shuffling_lines_cannot_change_business_facts(
     assert shuffled["analysis"] == original["analysis"]
     assert shuffled["what_changed"] == original["what_changed"]
     # Avoid comparing random analysis IDs; compare reproducible diagnoses.
-    by_name = lambda result: {
-        item["diagnosis"]: (item["severity"], item["confidence_score"])
-        for item in result["diagnoses"]
-    }
+    def by_name(result: dict) -> dict:
+        return {
+            item["diagnosis"]: (item["severity"], item["confidence_score"])
+            for item in result["diagnoses"]
+        }
     assert by_name(shuffled) == by_name(original)
