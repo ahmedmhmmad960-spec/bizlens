@@ -64,6 +64,9 @@ distinct multiline orders, accounting reconciliation, weighted margins,
 missing cost/date behavior, no invented zero margins, invalid date/order
 rejection, shuffle invariance, and report/replay agreement.
 
-This milestone does **not** claim exact-cent accounting across very large
-datasets, calendar-quarter diagnoses, or fiscal-quarter support. Monetary
-precision and currency labeling are separate quality gates.
+The next stacked milestone applies integer minor-unit aggregation to
+the quarter series as well as overall and midpoint totals. This still does
+**not** claim fiscal-quarter support, product-threshold exactness, fiat/crypto
+currency identification, multi-currency conversion, or tax-grade accounting.
+Every supported monetary input is a multiple of 0.01 with a strict range
+limit; unsupported precision fails validation rather than being rounded.

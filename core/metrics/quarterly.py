@@ -2,6 +2,8 @@
 
 import pandas as pd
 
+from core.metrics.money import as_amount, average, percent, sum_minor_units
+
 
 def build_quarterly_trend(frame: pd.DataFrame, order_count_basis: str) -> list[dict]:
     """Return only observed calendar quarters in chronological order.
@@ -17,18 +19,17 @@ def build_quarterly_trend(frame: pd.DataFrame, order_count_basis: str) -> list[d
     quarter_keys = [frame["date"].dt.year, frame["date"].dt.quarter]
     result = []
     for (year, quarter), records in frame.groupby(quarter_keys, sort=True):
-        revenue = float(records["revenue"].sum())
-        cost = float(records["cost"].sum()) if "cost" in records.columns else None
-        discount = (
-            float(records["discount"].sum())
-            if "discount" in records.columns
-            else 0.0
+        revenue_cents = sum_minor_units(records["revenue"], "revenue")
+        cost_cents = (
+            sum_minor_units(records["cost"], "cost")
+            if "cost" in records.columns else None
         )
-        profit = revenue - cost if cost is not None else None
-        margin = (
-            profit / revenue * 100
-            if profit is not None and revenue > 0
-            else None
+        discount_cents = (
+            sum_minor_units(records["discount"], "discount")
+            if "discount" in records.columns else 0
+        )
+        profit_cents = (
+            revenue_cents - cost_cents if cost_cents is not None else None
         )
         orders = (
             int(records["order_id"].nunique())
@@ -41,13 +42,15 @@ def build_quarterly_trend(frame: pd.DataFrame, order_count_basis: str) -> list[d
                 "period": f"{int(year)}-Q{int(quarter)}",
                 "year": int(year),
                 "quarter": int(quarter),
-                "revenue": round(revenue, 2),
-                "cost": round(cost, 2) if cost is not None else None,
-                "gross_profit": round(profit, 2) if profit is not None else None,
-                "gross_margin": round(margin, 2) if margin is not None else None,
-                "discount": round(discount, 2),
+                "revenue": as_amount(revenue_cents),
+                "cost": as_amount(cost_cents) if cost_cents is not None else None,
+                "gross_profit": as_amount(profit_cents)
+                if profit_cents is not None else None,
+                "gross_margin": percent(profit_cents, revenue_cents)
+                if profit_cents is not None else None,
+                "discount": as_amount(discount_cents),
                 "orders": orders,
-                "aov": round(revenue / orders, 2) if orders else None,
+                "aov": average(revenue_cents, orders),
             }
         )
 

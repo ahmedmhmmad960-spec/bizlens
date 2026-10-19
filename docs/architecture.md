@@ -67,6 +67,8 @@ For the financial CSV boundary, read the [financial data contract](financial-dat
 
 Calendar-quarter chart observations follow the [quarterly trend contract](quarterly-trend-contract.md); they are separate from the midpoint periods used by V1 diagnoses. Both charts read the same immutable numeric series from the deterministic core.
 
+For monetary totals, the [financial data contract](financial-data-contract.md) also defines integer minor-unit accumulation, reject-on-import rules for unsupported sub-cent values, and the explicit currency-unknown boundary. Quarterly and global amounts must reconcile from the same validated inputs.
+
 The reference figures in the [hand-audited golden financial fixtures](golden-financial-fixtures.md) serve as independent expected results for metrics, diagnostic evidence, period conservation and replay, rather than automatically updating snapshots to mirror implementation behavior.
 
 ### AI layer
