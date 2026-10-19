@@ -50,10 +50,30 @@ must block a financial report. Keep it aligned with
 - Existing period grouping remains a chronological midpoint split between
   the earliest and latest dates, **not a calendar quarter**. Quarterly
   reporting requires its own explicit date-grain implementation.
-- The current engine sums using floating-point arithmetic and rounds the
-  presented metrics to two decimals. Currency-specific minor-unit precision
-  and an explicit currency column should be addressed before financial-grade
-  production accounting claims.
+- **V1 currency-agnostic two-decimal contract:** Every *present* monetary
+  value in `revenue`, `cost` and `discount` must be an exact multiple of
+  0.01. Missing, non-finite or sub-cent values (e.g. `1.005`) are rejected
+  before numeric coercion. The engine does **not** silently round imported
+  amounts or invent cents.
+- Totals and period/quarter amounts accumulate in **integer minor units**.
+  Conversion back to JSON numbers happens only at the output boundary for
+  compatibility. Gross margins and AOV are computed from those integer
+  totals using Decimal and explicit ROUND_HALF_UP at two decimals.
+- `data_quality.monetary_precision` records `two_decimal_minor_units` and
+  `data_quality.currency` records `unspecified`. **No currency conversion,
+  exchange-rate lookup, symbol or ISO 4217 claim** is made without an
+  explicit source currency. V1 does not support currencies with other
+  minor-unit scales (such as 0-decimal currencies) as financial-grade output.
+- The current numeric JSON API has a safety limit of 10^13 minor units per
+  row and per aggregated input field, to avoid falsely implying cent-level
+  precision after conversion to floats in client code. Values exceeding the
+  limit are rejected with a clear import error rather than distorted.
+- The numeric values used for legacy product-diagnosis calculations are
+  normalized to valid two-decimal amounts, but that diagnosis module still
+  uses pandas floating-point group reductions. Product-level threshold
+  precision needs its own integer-minor-unit refactor before accounting-grade
+  guarantees can be made. Currency codes, refunds, tax conventions, and
+  multi-currency imports remain future explicit contracts.
 - Fail-closed validation is deliberate: the API should communicate a useful
   import error instead of presenting misleading zeroes or partial totals.
 
