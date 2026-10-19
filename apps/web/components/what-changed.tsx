@@ -1,6 +1,7 @@
 "use client";
 
 import type { AnalysisResponse } from "@/lib/api";
+import ObservedSignals from "@/components/observed-signals";
 
 type Props = { analysis: AnalysisResponse; onBack: () => void; onContinue: () => void };
 
@@ -19,6 +20,7 @@ export default function WhatChanged({ analysis, onBack, onContinue }: Props) {
       <span className="flow-kicker">Period comparison</span>
       <h1>What changed in the business?</h1>
       <p className="insight-intro">BizLens compares the available periods so you can separate meaningful movement from noise.</p>
+      <ObservedSignals changes={rows} />
       <section className="change-list">
         {rows.length ? rows.map((row, index) => <article className="change-card" key={`${value(row.metric ?? row.label)}-${index}`}><div><span>{value(row.metric ?? row.label ?? "Business metric")}</span><strong>{value(row.change ?? row.value ?? row.current)}</strong></div><p>{value(row.description ?? row.interpretation ?? row.direction, "Observed period movement in the analyzed data.")}</p></article>) : <div className="empty-insight"><strong>No period comparison available.</strong><p>The uploaded data did not contain enough comparable periods for a reliable change view.</p></div>}
       </section>
