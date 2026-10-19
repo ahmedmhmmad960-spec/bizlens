@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from core.metrics.quarterly import build_quarterly_trend
+
 
 @dataclass(frozen=True)
 class PreparedSalesData:
@@ -147,6 +149,9 @@ def analyze_prepared_sales(prepared: PreparedSalesData) -> dict:
             "order_count_basis": basis,
         },
     }
+
+    # Calendar-quarter chart data is distinct from legacy midpoint comparison.
+    result["quarterly_trend"] = build_quarterly_trend(df, basis)
 
     # Period comparison
     if "date" in df.columns and df["date"].notna().any():
