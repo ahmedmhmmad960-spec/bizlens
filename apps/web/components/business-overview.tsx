@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { AnalysisResponse, Diagnosis } from "@/lib/api";
+import QuarterlyTrends from "@/components/quarterly-trends";
 
 function text(value: unknown, fallback = "—") {
   if (value === null || value === undefined || value === "") return fallback;
@@ -54,6 +55,8 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
           <div><span>Gross margin</span><strong>{number(margin, "%")}</strong><small>Observed</small></div>
           <div><span>Orders</span><strong>{number(orders)}</strong><small>Observed</small></div>
         </section>
+
+        <QuarterlyTrends data={analysis.analysis?.quarterly_trend} />
 
         <section className="executive-summary">
           <div>
