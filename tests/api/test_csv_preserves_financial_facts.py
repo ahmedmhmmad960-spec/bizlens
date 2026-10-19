@@ -1,7 +1,7 @@
 """CSV HTTP ingress must preserve identifiers and exact financial text."""
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from ai.client.rule_based_provider import RuleBasedProvider
 from apps.api.app import main as api
