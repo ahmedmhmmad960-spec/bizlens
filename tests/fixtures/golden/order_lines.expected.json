@@ -1,0 +1,82 @@
+{
+  "scenario": "Multiple line items per order; profit and orders remain independent of line count.",
+  "rows": 6,
+  "metrics": {
+    "revenue": 700,
+    "orders": 4,
+    "cost": 375,
+    "gross_profit": 325,
+    "gross_margin": 46.43,
+    "discount": 50,
+    "aov": 175
+  },
+  "period_comparison": {
+    "previous": {
+      "revenue": 300,
+      "discount": 15,
+      "orders": 2,
+      "cost": 145,
+      "gross_profit": 155,
+      "gross_margin": 51.67
+    },
+    "current": {
+      "revenue": 400,
+      "discount": 35,
+      "orders": 2,
+      "cost": 230,
+      "gross_profit": 170,
+      "gross_margin": 42.5
+    }
+  },
+  "quality": {
+    "order_count_basis": "order_id",
+    "missing_values": 0,
+    "duplicate_rows": 0
+  },
+  "diagnoses": {
+    "Margin Decline": {
+      "severity": "medium",
+      "change_points": -9.17
+    },
+    "Cost Pressure": {
+      "severity": "high",
+      "cost_change_percent": 58.62
+    },
+    "Discount Pressure": {
+      "severity": "high",
+      "discount_change_percent": 133.33
+    }
+  },
+  "changes": {
+    "revenue": {
+      "previous": 300,
+      "current": 400,
+      "change": 100,
+      "direction": "up"
+    },
+    "orders": {
+      "previous": 2,
+      "current": 2,
+      "change": 0,
+      "direction": "unchanged"
+    },
+    "cost": {
+      "previous": 145,
+      "current": 230,
+      "change": 85,
+      "direction": "up"
+    },
+    "gross_profit": {
+      "previous": 155,
+      "current": 170,
+      "change": 15,
+      "direction": "up"
+    },
+    "gross_margin": {
+      "previous": 51.67,
+      "current": 42.5,
+      "change": -9.17,
+      "direction": "down"
+    }
+  }
+}

@@ -65,6 +65,8 @@ A diagnosis rule should be reproducible from the same input data.
 
 For the financial CSV boundary, read the [financial data contract](financial-data-contract.md). It defines line-item grain, distinct `order_id` counting, explicit invalid-data rejection, and compatibility rules for older CSVs without order identifiers. This contract is enforced with regression tests rather than relying on AI interpretation.
 
+The reference figures in the [hand-audited golden financial fixtures](golden-financial-fixtures.md) serve as independent expected results for metrics, diagnostic evidence, period conservation and replay, rather than automatically updating snapshots to mirror implementation behavior.
+
 ### AI layer
 
 The AI layer receives verified diagnosis context. It can explain a supported finding and formulate a recommendation within the supplied evidence boundary. It must not become the calculator for business metrics.
