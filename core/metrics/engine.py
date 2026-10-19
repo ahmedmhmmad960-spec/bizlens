@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from core.metrics.money import as_amount, average, minor_units, percent, sum_minor_units
 from core.metrics.quarterly import build_quarterly_trend
 
 
@@ -46,8 +47,17 @@ def prepare_sales_dataframe(df: pd.DataFrame) -> PreparedSalesData:
         raise ValueError("The CSV must contain a revenue column.")
 
     for column in ("revenue", "cost", "discount", "quantity"):
-        if column in frame.columns:
+        if column not in frame.columns:
+            continue
+        if column == "quantity":
             frame[column] = _reject_invalid(frame[column], column)
+        else:
+            # Validate the original lexical values BEFORE pandas float coercion.
+            # Diagnoses receive only canonical amounts; metrics sum integer cents.
+            frame[column] = [
+                as_amount(minor_units(value, column, row))
+                for row, value in enumerate(frame[column], start=1)
+            ]
 
     if "date" in frame.columns:
         dates = pd.to_datetime(frame["date"], errors="coerce", utc=True)
@@ -88,53 +98,36 @@ def analyze_prepared_sales(prepared: PreparedSalesData) -> dict:
     df = prepared.frame
     basis = prepared.order_count_basis
 
-    revenue = float(df["revenue"].sum())
+    revenue_cents = sum_minor_units(df["revenue"], "revenue")
     orders = _count_orders(df, basis)
-
-    cost = (
-        float(df["cost"].sum())
+    cost_cents = (
+        sum_minor_units(df["cost"], "cost")
         if "cost" in df.columns
         else None
     )
-
-    discount = (
-        float(df["discount"].sum())
+    discount_cents = (
+        sum_minor_units(df["discount"], "discount")
         if "discount" in df.columns
-        else 0.0
-    )
-
-    gross_profit = (
-        revenue - cost
-        if cost is not None
-        else None
-    )
-
-    gross_margin = (
-        gross_profit / revenue
-        if cost is not None and revenue > 0
-        else None
-    )
-
-    aov = (
-        revenue / orders
-        if orders > 0
         else 0
+    )
+    profit_cents = (
+        revenue_cents - cost_cents if cost_cents is not None else None
     )
 
     result = {
         "rows": len(df),
         "columns": list(df.columns),
         "metrics": {
-            "revenue": round(revenue, 2),
+            "revenue": as_amount(revenue_cents),
             "orders": orders,
-            "cost": round(cost, 2)
-            if cost is not None else None,
-            "gross_profit": round(gross_profit, 2)
-            if gross_profit is not None else None,
-            "gross_margin": round(gross_margin * 100, 2)
-            if gross_margin is not None else None,
-            "discount": round(discount, 2),
-            "aov": round(aov, 2),
+            "cost": as_amount(cost_cents)
+            if cost_cents is not None else None,
+            "gross_profit": as_amount(profit_cents)
+            if profit_cents is not None else None,
+            "gross_margin": percent(profit_cents, revenue_cents)
+            if profit_cents is not None else None,
+            "discount": as_amount(discount_cents),
+            "aov": average(revenue_cents, orders),
         },
         "data_quality": {
             "missing_values": int(
@@ -147,6 +140,8 @@ def analyze_prepared_sales(prepared: PreparedSalesData) -> dict:
             "has_discount": "discount" in df.columns,
             "has_date": "date" in df.columns,
             "order_count_basis": basis,
+            "monetary_precision": "two_decimal_minor_units",
+            "currency": "unspecified",
         },
     }
 
@@ -178,57 +173,36 @@ def analyze_prepared_sales(prepared: PreparedSalesData) -> dict:
             ]
 
             def period_metrics(period_df):
-                period_revenue = float(
-                    period_df["revenue"].sum()
-                )
-
-                period_discount = (
-                    float(period_df["discount"].sum())
-                    if "discount" in period_df.columns
-                    else None
-                )
-
+                period_revenue = sum_minor_units(period_df["revenue"], "revenue")
                 period_cost = (
-                    float(period_df["cost"].sum())
-                    if "cost" in period_df.columns
-                    else None
+                    sum_minor_units(period_df["cost"], "cost")
+                    if "cost" in period_df.columns else None
                 )
-
+                period_discount = (
+                    sum_minor_units(period_df["discount"], "discount")
+                    if "discount" in period_df.columns else None
+                )
                 period_profit = (
                     period_revenue - period_cost
-                    if period_cost is not None
-                    else None
-                )
-
-                period_margin = (
-                    period_profit / period_revenue * 100
-                    if period_profit is not None
-                    and period_revenue > 0
-                    else None
+                    if period_cost is not None else None
                 )
 
                 return {
-                    "revenue": round(period_revenue, 2),
+                    "revenue": as_amount(period_revenue),
                     "discount": (
-                        round(period_discount, 2)
-                        if period_discount is not None
-                        else None
+                        as_amount(period_discount)
+                        if period_discount is not None else None
                     ),
                     "orders": _count_orders(period_df, basis),
                     "cost": (
-                        round(period_cost, 2)
-                        if period_cost is not None
-                        else None
+                        as_amount(period_cost) if period_cost is not None else None
                     ),
                     "gross_profit": (
-                        round(period_profit, 2)
-                        if period_profit is not None
-                        else None
+                        as_amount(period_profit) if period_profit is not None else None
                     ),
                     "gross_margin": (
-                        round(period_margin, 2)
-                        if period_margin is not None
-                        else None
+                        percent(period_profit, period_revenue)
+                        if period_profit is not None else None
                     ),
                 }
 
