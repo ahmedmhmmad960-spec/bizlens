@@ -1,43 +1,94 @@
+from dataclasses import dataclass
+
+import numpy as np
 import pandas as pd
 
 
-def analyze_dataframe(df: pd.DataFrame) -> dict:
-    df = df.copy()
+@dataclass(frozen=True)
+class PreparedSalesData:
+    """Validated input shared by metrics and downstream diagnosis engines."""
 
-    # Normalize column names
-    df.columns = [
+    frame: pd.DataFrame
+    order_count_basis: str
+
+
+def _reject_invalid(series: pd.Series, column: str) -> pd.Series:
+    """Convert a supplied numeric column without concealing invalid values."""
+    numeric = pd.to_numeric(series, errors="coerce").astype("float64")
+    invalid = numeric.isna() | ~np.isfinite(numeric.to_numpy())
+    if invalid.any():
+        first_row = int(np.flatnonzero(invalid.to_numpy())[0]) + 1
+        raise ValueError(
+            f"Column '{column}' has a missing, non-numeric, or non-finite "
+            f"value at data row {first_row}."
+        )
+    return numeric
+
+
+def prepare_sales_dataframe(df: pd.DataFrame) -> PreparedSalesData:
+    """Normalize and validate row-level financial facts exactly once.
+
+    A row represents a sales line; when order_id is supplied, unique order
+    identifiers—not row counts—represent customer orders.
+    """
+    frame = df.copy()
+    frame.columns = [
         str(column).strip().lower().replace(" ", "_")
-        for column in df.columns
+        for column in frame.columns
     ]
 
-    # Required field
-    if "revenue" not in df.columns:
+    if not frame.columns.is_unique:
+        raise ValueError("Column names must be unique after normalization.")
+    if frame.empty:
+        raise ValueError("The CSV must contain at least one data row.")
+    if "revenue" not in frame.columns:
         raise ValueError("The CSV must contain a revenue column.")
 
-    # Convert numeric fields
-    numeric_columns = [
-        "revenue",
-        "cost",
-        "discount",
-        "quantity",
-    ]
+    for column in ("revenue", "cost", "discount", "quantity"):
+        if column in frame.columns:
+            frame[column] = _reject_invalid(frame[column], column)
 
-    for column in numeric_columns:
-        if column in df.columns:
-            df[column] = pd.to_numeric(
-                df[column],
-                errors="coerce"
-            ).fillna(0)
+    if "date" in frame.columns:
+        dates = pd.to_datetime(frame["date"], errors="coerce", utc=True)
+        if dates.isna().any():
+            first_row = int(np.flatnonzero(dates.isna().to_numpy())[0]) + 1
+            raise ValueError(f"Column 'date' has an invalid value at data row {first_row}.")
+        frame["date"] = dates
 
-    # Convert date when available
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(
-            df["date"],
-            errors="coerce"
-        )
+    if "order_id" in frame.columns:
+        order_ids = frame["order_id"].astype("string").str.strip()
+        if order_ids.isna().any() or order_ids.eq("").any():
+            raise ValueError("Column 'order_id' contains a missing or blank identifier.")
+        frame["order_id"] = order_ids
+
+        if "date" in frame.columns:
+            conflicting_dates = frame.groupby("order_id")["date"].nunique()
+            if (conflicting_dates > 1).any():
+                raise ValueError("The same order_id cannot have different transaction dates.")
+        basis = "order_id"
+    else:
+        # Older CSVs without an identifier retain explicit row-based estimates.
+        basis = "row"
+
+    return PreparedSalesData(frame=frame, order_count_basis=basis)
+
+
+def _count_orders(frame: pd.DataFrame, basis: str) -> int:
+    return int(frame["order_id"].nunique()) if basis == "order_id" else len(frame)
+
+
+def analyze_dataframe(df: pd.DataFrame) -> dict:
+    """Public compatibility entry point: validate, then calculate metrics."""
+    return analyze_prepared_sales(prepare_sales_dataframe(df))
+
+
+def analyze_prepared_sales(prepared: PreparedSalesData) -> dict:
+    """Compute totals from already-validated, canonical sales rows."""
+    df = prepared.frame
+    basis = prepared.order_count_basis
 
     revenue = float(df["revenue"].sum())
-    orders = len(df)
+    orders = _count_orders(df, basis)
 
     cost = (
         float(df["cost"].sum())
@@ -94,6 +145,7 @@ def analyze_dataframe(df: pd.DataFrame) -> dict:
             "has_cost": "cost" in df.columns,
             "has_discount": "discount" in df.columns,
             "has_date": "date" in df.columns,
+            "order_count_basis": basis,
         },
     }
 
@@ -158,7 +210,7 @@ def analyze_dataframe(df: pd.DataFrame) -> dict:
                         if period_discount is not None
                         else None
                     ),
-                    "orders": len(period_df),
+                    "orders": _count_orders(period_df, basis),
                     "cost": (
                         round(period_cost, 2)
                         if period_cost is not None
