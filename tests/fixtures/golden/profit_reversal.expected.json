@@ -1,0 +1,93 @@
+{
+  "scenario": "Revenue increases while profit collapses; a concentrated low-margin product drives the decline.",
+  "rows": 4,
+  "metrics": {
+    "revenue": 500,
+    "orders": 4,
+    "cost": 350,
+    "gross_profit": 150,
+    "gross_margin": 30,
+    "discount": 40,
+    "aov": 125
+  },
+  "period_comparison": {
+    "previous": {
+      "revenue": 200,
+      "discount": 10,
+      "orders": 2,
+      "cost": 60,
+      "gross_profit": 140,
+      "gross_margin": 70
+    },
+    "current": {
+      "revenue": 300,
+      "discount": 30,
+      "orders": 2,
+      "cost": 290,
+      "gross_profit": 10,
+      "gross_margin": 3.33
+    }
+  },
+  "quality": {
+    "order_count_basis": "order_id",
+    "missing_values": 0,
+    "duplicate_rows": 0
+  },
+  "diagnoses": {
+    "Margin Decline": {
+      "severity": "high",
+      "change_points": -66.67
+    },
+    "Revenue Up / Profit Down": {
+      "severity": "high",
+      "revenue_change_percent": 50,
+      "profit_change_percent": -92.86
+    },
+    "Cost Pressure": {
+      "severity": "high",
+      "cost_change_percent": 383.33
+    },
+    "Discount Pressure": {
+      "severity": "high",
+      "discount_change_percent": 200
+    },
+    "High Revenue / Low Profit Product": {
+      "severity": "high",
+      "product_id": "P2",
+      "gross_margin": 3.33,
+      "revenue_share": 60
+    }
+  },
+  "changes": {
+    "revenue": {
+      "previous": 200,
+      "current": 300,
+      "change": 100,
+      "direction": "up"
+    },
+    "orders": {
+      "previous": 2,
+      "current": 2,
+      "change": 0,
+      "direction": "unchanged"
+    },
+    "cost": {
+      "previous": 60,
+      "current": 290,
+      "change": 230,
+      "direction": "up"
+    },
+    "gross_profit": {
+      "previous": 140,
+      "current": 10,
+      "change": -130,
+      "direction": "down"
+    },
+    "gross_margin": {
+      "previous": 70,
+      "current": 3.33,
+      "change": -66.67,
+      "direction": "down"
+    }
+  }
+}
