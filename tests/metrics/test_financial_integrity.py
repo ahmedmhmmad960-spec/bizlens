@@ -89,6 +89,25 @@ def test_empty_input_and_colliding_normalized_columns_are_rejected() -> None:
         analyze_dataframe(pd.DataFrame({"Revenue": [30], " revenue ": [40]}))
 
 
+def test_missing_cost_column_does_not_invent_gross_profit() -> None:
+    result = analyze_dataframe(pd.DataFrame({"order_id": ["A"], "revenue": [120]}))
+
+    assert result["metrics"]["cost"] is None
+    assert result["metrics"]["gross_profit"] is None
+    assert result["metrics"]["gross_margin"] is None
+    assert result["data_quality"]["has_cost"] is False
+
+
+def test_exact_duplicate_line_items_are_reported_not_silently_dropped() -> None:
+    result = analyze_dataframe(
+        pd.DataFrame({"order_id": ["A", "A"], "revenue": [50, 50]})
+    )
+
+    assert result["metrics"]["revenue"] == 100
+    assert result["metrics"]["orders"] == 1
+    assert result["data_quality"]["duplicate_rows"] == 1
+
+
 def test_validation_does_not_modify_input_dataframe() -> None:
     frame = pd.DataFrame({"Order ID": [" A ", " A "], "Revenue": ["10", "20"]})
     original = frame.copy(deep=True)
