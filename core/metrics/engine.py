@@ -66,6 +66,12 @@ def prepare_sales_dataframe(df: pd.DataFrame) -> PreparedSalesData:
             raise ValueError(f"Column 'date' has an invalid value at data row {first_row}.")
         frame["date"] = dates
 
+    if "product_id" in frame.columns:
+        product_ids = frame["product_id"].astype("string").str.strip()
+        if product_ids.isna().any() or product_ids.eq("").any():
+            raise ValueError("Column 'product_id' contains a missing or blank identifier.")
+        frame["product_id"] = product_ids
+
     if "order_id" in frame.columns:
         order_ids = frame["order_id"].astype("string").str.strip()
         if order_ids.isna().any() or order_ids.eq("").any():
