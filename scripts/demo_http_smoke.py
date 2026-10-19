@@ -14,6 +14,7 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB_URL = os.getenv("BIZLENS_WEB_URL", "http://127.0.0.1:3000").rstrip("/")
+API_URL = os.getenv("BIZLENS_API_URL", "http://127.0.0.1:8000").rstrip("/")
 BOUNDARY = "BizLensDemoJourneyBoundary"
 
 
@@ -34,15 +35,21 @@ def request(path: str, data: bytes | None = None, content_type: str | None = Non
 
 
 def ready() -> None:
-    for _ in range(100):
+    """Both services must be live; the web landing can boot before FastAPI."""
+    for _ in range(120):
         try:
             status, html = request("/")
-            if status == 200 and b"BizLens" in html:
+            with urlopen(f"{API_URL}/health", timeout=3) as api_response:
+                healthy = (
+                    api_response.status == 200
+                    and json.load(api_response).get("status") == "healthy"
+                )
+            if status == 200 and b"BizLens" in html and healthy:
                 return
         except (URLError, TimeoutError, OSError):
             pass
         time.sleep(0.5)
-    raise RuntimeError(f"Next.js app did not become ready at {WEB_URL}")
+    raise RuntimeError(f"Timed out waiting for both Next.js {WEB_URL} and API {API_URL}")
 
 
 def upload_csv(contents: bytes, name: str = "store.csv") -> dict:
