@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
 
@@ -15,9 +14,9 @@ class PreparedSalesData:
 def _reject_invalid(series: pd.Series, column: str) -> pd.Series:
     """Convert a supplied numeric column without concealing invalid values."""
     numeric = pd.to_numeric(series, errors="coerce").astype("float64")
-    invalid = numeric.isna() | ~np.isfinite(numeric.to_numpy())
+    invalid = numeric.isna() | numeric.isin([float("inf"), float("-inf")])
     if invalid.any():
-        first_row = int(np.flatnonzero(invalid.to_numpy())[0]) + 1
+        first_row = int(invalid.to_numpy().nonzero()[0][0]) + 1
         raise ValueError(
             f"Column '{column}' has a missing, non-numeric, or non-finite "
             f"value at data row {first_row}."
@@ -51,7 +50,7 @@ def prepare_sales_dataframe(df: pd.DataFrame) -> PreparedSalesData:
     if "date" in frame.columns:
         dates = pd.to_datetime(frame["date"], errors="coerce", utc=True)
         if dates.isna().any():
-            first_row = int(np.flatnonzero(dates.isna().to_numpy())[0]) + 1
+            first_row = int(dates.isna().to_numpy().nonzero()[0][0]) + 1
             raise ValueError(f"Column 'date' has an invalid value at data row {first_row}.")
         frame["date"] = dates
 
