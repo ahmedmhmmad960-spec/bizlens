@@ -4,7 +4,7 @@ The V1 CSV contract does not identify a currency. Values are kept as plain
 currency-*agnostic* amounts, not USD, converted FX rates or tax accounting.
 """
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 CENT = Decimal("0.01")
 HUNDRED = Decimal(100)
