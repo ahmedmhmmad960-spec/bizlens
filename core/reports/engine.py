@@ -17,6 +17,7 @@ def build_business_report(
         "title": "BizLens Business Report",
         "summary": build_executive_summary(metrics, top_diagnoses),
         "metrics": metrics,
+        "quarterly_trend": analysis.get("quarterly_trend", []),
         "data_quality": data_quality,
         "top_diagnoses": top_diagnoses,
         "diagnoses": diagnoses,

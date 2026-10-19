@@ -65,6 +65,8 @@ A diagnosis rule should be reproducible from the same input data.
 
 For the financial CSV boundary, read the [financial data contract](financial-data-contract.md). It defines line-item grain, distinct `order_id` counting, explicit invalid-data rejection, and compatibility rules for older CSVs without order identifiers. This contract is enforced with regression tests rather than relying on AI interpretation.
 
+Calendar-quarter chart observations follow the [quarterly trend contract](quarterly-trend-contract.md); they are separate from the midpoint periods used by V1 diagnoses. Both charts read the same immutable numeric series from the deterministic core.
+
 The reference figures in the [hand-audited golden financial fixtures](golden-financial-fixtures.md) serve as independent expected results for metrics, diagnostic evidence, period conservation and replay, rather than automatically updating snapshots to mirror implementation behavior.
 
 ### AI layer

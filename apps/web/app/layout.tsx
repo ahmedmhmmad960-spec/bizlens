@@ -4,6 +4,7 @@ import "./globals.css";
 import "./flow-premium.css";
 import "./diagnosis-flow-premium.css";
 import "./demo-premium.css";
+import "./quarterly-trends.css";
 import "./insight.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
