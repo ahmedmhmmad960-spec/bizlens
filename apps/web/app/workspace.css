@@ -178,6 +178,12 @@
 .workspace-content .executive-summary { background: #141a1b; border-color: #5b4a20; }
 .workspace-content .executive-summary .category { color: #ffd84d; }
 .workspace-content .quarter-figure { background: #101b27; }
+.workspace-content .quarter-bar-revenue { fill: #32d3df; }
+.workspace-content .quarter-bar-profit { fill: #9275e9; }
+.workspace-content .quarter-legend-revenue { background: #32d3df; }
+.workspace-content .quarter-legend-profit { background: #9275e9; }
+.workspace-content .observed-up { background: #32d3df; }
+.workspace-content .observed-down { background: #9275e9; }
 .workspace-content .quarter-section-header h2,
 .workspace-content .overview-findings h2 { color: #eef4fc; }
 .workspace-content .overview-actions,
