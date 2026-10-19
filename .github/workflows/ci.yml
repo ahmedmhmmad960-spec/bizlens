@@ -33,7 +33,7 @@ jobs:
         run: ruff check .
 
       - name: Tests
-        run: pytest
+        run: python -m pytest
 
   frontend:
     name: Frontend checks

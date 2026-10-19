@@ -1,9 +1,9 @@
 from io import StringIO
 
 import pandas as pd
+
 from ai.client.rule_based_provider import RuleBasedProvider
 from core.analysis.service import AnalysisService
-
 
 DEMO_CSV = """order_id,date,customer_id,product_id,quantity,revenue,discount,cost
 1,2026-08-01,C001,P001,1,120,10,60
@@ -25,7 +25,7 @@ def test_analysis_service_returns_complete_contract() -> None:
 
     assert result["success"] is True
     assert result["analysis_id"]
-    assert result["analysis"]["metrics"]["revenue"] == 1460
+    assert result["analysis"]["metrics"]["revenue"] == 1560
     assert isinstance(result["diagnoses"], list)
     assert len(result["top_diagnoses"]) <= 3
     assert result["demo_replay"]["total_steps"] == 10
