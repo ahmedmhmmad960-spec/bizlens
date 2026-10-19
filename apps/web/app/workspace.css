@@ -1,0 +1,218 @@
+/* BizLens Demo V1: Figma journey, approved premium dashboard language.
+ * Changes only the implemented app. Original Figma and approved HTML remain untouched.
+ */
+.workspace-frame {
+  --workspace-border: #23313f;
+  --workspace-surface: #111b26;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #090e15;
+  color: #f3f6fb;
+}
+.workspace-sidebar {
+  z-index: 3;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-width: 0;
+  padding: 26px 13px 17px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--workspace-border);
+  background: #091019;
+}
+.workspace-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 13px 26px;
+  color: #f5f7fa;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -.045em;
+}
+.workspace-brand-symbol {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #ffd84d;
+  transform: rotate(45deg);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.workspace-brand-symbol span { width: 5px; height: 5px; background: #ffd84d; }
+.workspace-session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 10px;
+  margin: 2px 2px 29px;
+  border: 1px solid #293949;
+  border-radius: 9px;
+  background: #14202c;
+}
+.workspace-session-symbol {
+  display: grid;
+  place-items: center;
+  width: 33px;
+  height: 33px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: #30290e;
+  color: #ffd84d;
+  font-size: 14px;
+  font-weight: 700;
+}
+.workspace-session strong, .workspace-session small { display: block; }
+.workspace-session strong { font-size: 12px; font-weight: 600; }
+.workspace-session small { color: #9dafc1; font-size: 10px; margin-top: 4px; }
+.workspace-nav { display: flex; flex-direction: column; gap: 3px; }
+.workspace-nav-heading {
+  padding: 0 12px 12px;
+  text-transform: uppercase;
+  color: #8ca2b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .15em;
+}
+.workspace-nav-item {
+  min-height: 41px;
+  width: 100%;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  color: #a6b8ca;
+  font-size: 12px;
+  cursor: pointer;
+}
+.workspace-nav-item:hover { background: #132130; color: #f5f7fa; }
+.workspace-nav-item.is-active {
+  border-color: #374f63;
+  color: #f5f7fa;
+  background: #1a2937;
+}
+.workspace-nav-item.is-active svg { color: #ffd84d; }
+.workspace-nav-count {
+  margin-left: auto;
+  border-radius: 6px;
+  background: #253b51;
+  color: #d4e2ef;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+.workspace-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding: 16px 9px 0;
+  border-top: 1px solid #263747;
+}
+.workspace-data-state { padding-bottom: 15px; }
+.workspace-state-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  background: #4ade80;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(74,222,128,.09);
+}
+.workspace-data-state strong { font-size: 11px; font-weight: 500; }
+.workspace-data-state small { display: block; margin: 8px 0 0 15px; font-size: 10px; color: #8da4b9; }
+.workspace-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 5px;
+  color: #96a9bd;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11px;
+}
+.workspace-footer-link:hover { color: #ffd84d; }
+.workspace-main { min-width: 0; }
+.workspace-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 66px;
+  padding: 0 34px;
+  border-bottom: 1px solid var(--workspace-border);
+  color: #a0b3c6;
+  background: #0b121b;
+}
+.workspace-breadcrumb { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+.workspace-breadcrumb strong { color: #f6f7f9; font-weight: 600; }
+.workspace-topbar-trust { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #ffd84d; }
+.workspace-content { min-width: 0; }
+.workspace-content .overview-header,
+.workspace-content .flow-header { display: none; }
+.workspace-content .overview-page,
+.workspace-content .insight-page,
+.workspace-content .report-page,
+.workspace-content .diagnosis-page { min-height: calc(100vh - 66px); background: #090e15; }
+.workspace-content .overview-content {
+  padding-top: 44px;
+  width: min(1240px, calc(100% - 64px));
+}
+.workspace-content .overview-content h1 { font-size: clamp(34px, 4.4vw, 53px); }
+.workspace-content .overview-snapshot,
+.workspace-content .finding-list,
+.workspace-content .executive-summary,
+.workspace-content .quarter-figure,
+.workspace-content .quarter-table-wrap { border-color: #273949; }
+.workspace-content .overview-snapshot,
+.workspace-content .finding-list { background: #101b27; }
+.workspace-content .overview-snapshot strong { font-variant-numeric: tabular-nums; }
+.workspace-content .executive-summary { background: #141a1b; border-color: #5b4a20; }
+.workspace-content .executive-summary .category { color: #ffd84d; }
+.workspace-content .quarter-figure { background: #101b27; }
+.workspace-content .quarter-section-header h2,
+.workspace-content .overview-findings h2 { color: #eef4fc; }
+.workspace-content .overview-actions,
+.workspace-content .insight-actions { flex-wrap: wrap; }
+
+@media (max-width: 800px) {
+  .workspace-frame { display: block; }
+  .workspace-sidebar {
+    position: static;
+    height: auto;
+    padding: 11px 15px 9px;
+    border-right: 0;
+    border-bottom: 1px solid #273949;
+  }
+  .workspace-brand { padding: 3px 3px 10px; font-size: 18px; }
+  .workspace-brand-symbol { width: 14px; height: 14px; }
+  .workspace-session, .workspace-sidebar-footer, .workspace-nav-heading { display: none; }
+  .workspace-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .workspace-nav-item { flex: 0 0 auto; width: auto; min-height: 38px; gap: 7px; padding: 0 10px; font-size: 11px; }
+  .workspace-nav-count { margin-left: 0; }
+  .workspace-topbar { padding: 0 17px; min-height: 49px; }
+  .workspace-topbar-trust { display: none; }
+  .workspace-content .overview-content { width: calc(100% - 32px); padding-top: 30px; }
+  .workspace-content .overview-page,
+  .workspace-content .insight-page,
+  .workspace-content .report-page,
+  .workspace-content .diagnosis-page { min-height: calc(100vh - 130px); }
+}
+@media print {
+  .workspace-sidebar,.workspace-topbar { display: none !important; }
+  .workspace-frame { display: block; }
+  .workspace-content .report-page { background: white; }
+}
