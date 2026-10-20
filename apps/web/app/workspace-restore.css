@@ -114,3 +114,51 @@
  .workspace-screen .overview-snapshot>div { padding:12px; }
 }
 @media(prefers-reduced-motion:reduce) { .workspace-sidebar { transition:none; } }
+
+/* Exact UI hierarchy carried from the approved dual-reference snapshots. */
+.workspace-overview-lead { display:grid; grid-template-columns:minmax(0,1fr) minmax(230px,266px);
+  gap:22px; align-items:start; margin-bottom:22px; }
+.workspace-overview-lead h1 { letter-spacing:-.046em; font-weight:650; }
+.workspace-overview-lead .overview-intro { max-width:660px; color:#a8b5c6; font-size:14px; line-height:1.6; margin:0; }
+.workspace-key-takeaway { padding:17px 18px; background:#1a1a16; border:1px solid #4d4123;
+  border-radius:11px; min-height:122px; }
+.workspace-key-takeaway>span { display:block; color:#ffd84d; font-size:11px;
+  font-weight:750; text-transform:uppercase; letter-spacing:.035em; }
+.workspace-key-takeaway p { color:#cec7ae; font-size:12px; line-height:1.55; margin:11px 0; }
+.workspace-key-takeaway button { color:#ffd84d; font-size:12px; font-weight:650;
+  padding:5px 0; border:0; background:none; cursor:pointer; text-align:left; }
+.workspace-key-takeaway button:disabled { cursor:default; opacity:.6; }
+.workspace-screen .overview-content .section-heading .category { color:#93a6ba; }
+.workspace-screen .overview-findings .overview-finding h3 { line-height:1.35; }
+.workspace-screen .overview-findings .overview-finding p { margin:8px 0 0; }
+.workspace-show-evidence { display:block; align-self:flex-end; padding:9px 0 0;
+  margin-top:auto; border:0; border-top:1px solid var(--ws-border); background:transparent;
+  color:#ffd84d; font-size:11px; font-weight:650; cursor:pointer; width:100%; text-align:right; }
+.workspace-show-evidence:hover { color:#ffe785; }
+.workspace-layout button:focus-visible { outline:2px solid #ffd84d; outline-offset:3px; }
+
+/* Original Figma Make / approved preview landing — preserve, don't redesign. */
+.landing { background:radial-gradient(ellipse at 50% 11%,rgba(255,216,77,.075),transparent 32%),#08090b; }
+.landing .topbar { border-bottom:1px solid rgba(255,255,255,.06); }
+.landing .logo { font-weight:750; }
+.landing .logo-mark { width:21px; height:21px; border:2px solid #ffd84d; border-radius:3px; }
+.landing .hero h1 { font-size:clamp(58px,7vw,92px); font-weight:660;
+  letter-spacing:-.055em; line-height:1.03; }
+.landing .hero { padding-top:110px; padding-bottom:60px; }
+.landing .preview-wrap { width:min(790px,100%); margin-bottom:85px; }
+.landing .preview-head { min-height:132px; }
+.landing .metric-mini { min-height:86px; }
+.landing .hero-actions .button.primary { font-weight:700; }
+.landing .philosophy { margin-top:42px; }
+@media(max-width:1000px) {
+ .workspace-overview-lead { grid-template-columns:minmax(0,1fr); }
+ .workspace-key-takeaway { max-width:590px; }
+}
+@media(max-width:780px) {
+ .workspace-screen .overview-content h1 { font-size:clamp(32px,7vw,43px); }
+ .workspace-overview-lead { gap:16px; }
+ .workspace-key-takeaway { max-width:none; }
+ .landing .hero { padding-top:75px; }
+ .landing .hero h1 { font-size:clamp(44px,12vw,67px); }
+ .landing .hero-actions { flex-wrap:wrap; justify-content:center; }
+}
