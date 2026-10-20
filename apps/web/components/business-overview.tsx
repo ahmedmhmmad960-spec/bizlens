@@ -1,25 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
-import type { AnalysisResponse, Diagnosis } from "@/lib/api";
 import QuarterlyTrends from "@/components/quarterly-trends";
+import type { AnalysisResponse, Diagnosis } from "@/lib/api";
 
-function text(value: unknown, fallback = "—") {
+function text(value: unknown, fallback = "—"): string {
   if (value === null || value === undefined || value === "") return fallback;
-  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "object") return fallback;
   return String(value);
 }
 
-function number(value: unknown, suffix = "") {
-  if (typeof value !== "number") return text(value);
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}${suffix}`;
+function number(value: unknown, suffix = ""): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return text(value);
+  return `${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}${suffix}`;
 }
 
-function pickMetric(metrics: Record<string, unknown> | undefined, keys: string[]) {
-  for (const key of keys) {
-    if (metrics && metrics[key] !== undefined && metrics[key] !== null) return metrics[key];
-  }
-  return undefined;
+function comparisonFact(period: unknown, field: string): number | null {
+  if (!period || typeof period !== "object") return null;
+  const value = (period as Record<string, unknown>)[field];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export default function BusinessOverview({ analysis, onContinue, onBack }: {
@@ -29,11 +28,36 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
 }) {
   const metrics = analysis.analysis?.metrics as Record<string, unknown> | undefined;
   const quality = analysis.analysis?.data_quality as Record<string, unknown> | undefined;
-  const diagnoses = useMemo(() => analysis.top_diagnoses?.slice(0, 3) ?? [], [analysis.top_diagnoses]);
-  const revenue = pickMetric(metrics, ["revenue", "total_revenue"]);
-  const grossProfit = pickMetric(metrics, ["gross_profit", "profit"]);
-  const margin = pickMetric(metrics, ["gross_margin", "margin"]);
-  const orders = pickMetric(metrics, ["orders", "order_count"]);
+  const diagnoses = useMemo(
+    () => analysis.top_diagnoses?.slice(0, 3) ?? [],
+    [analysis.top_diagnoses],
+  );
+  const comparison = analysis.analysis?.period_comparison as
+    { previous?: unknown; current?: unknown } | undefined;
+  const previousRevenue = comparisonFact(comparison?.previous, "revenue");
+  const currentRevenue = comparisonFact(comparison?.current, "revenue");
+  const previousProfit = comparisonFact(comparison?.previous, "gross_profit");
+  const currentProfit = comparisonFact(comparison?.current, "gross_profit");
+  const revenueUpProfitDown = previousRevenue !== null && currentRevenue !== null
+    && previousProfit !== null && currentProfit !== null
+    && currentRevenue > previousRevenue && currentProfit < previousProfit;
+
+  const mainFinding = diagnoses[0];
+  const headline = revenueUpProfitDown
+    ? "Revenue grew, but profit declined."
+    : mainFinding ? text(mainFinding.diagnosis) : "Your business performance, clearly.";
+  const subheadline = revenueUpProfitDown
+    ? "Revenue increased between observed periods while gross profit decreased."
+    : mainFinding
+    ? "The most important detected signal is shown first. Explore the evidence before acting."
+    : "These are the observed financial facts in the uploaded data.";
+  const cards = [
+    { name: "Revenue", value: number(metrics?.revenue), note: "Observed amount" },
+    { name: "Gross profit", value: number(metrics?.gross_profit), note: "Observed amount" },
+    { name: "Overall gross margin", value: number(metrics?.gross_margin, "%"), note: "From total revenue and cost" },
+    { name: "Orders", value: number(metrics?.orders), note: quality?.order_count_basis === "order_id" ? "Distinct order IDs" : "Row-based estimate" },
+    { name: "Average order value", value: number(metrics?.aov), note: "Revenue per order" },
+  ];
 
   return (
     <main className="overview-page">
@@ -45,45 +69,65 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
       </header>
 
       <div className="overview-content">
-        <div className="overview-kicker">Your business, clearly</div>
-        <h1>Here’s what the data says.</h1>
-        <p className="overview-intro">A concise view of the business picture before we move into the diagnoses that deserve your attention.</p>
+        <div className="overview-kicker">◆ Overview · Business performance</div>
+        <div className="workspace-overview-lead">
+          <div>
+            <h1>{headline}</h1>
+            <p className="overview-intro">{subheadline}</p>
+          </div>
+          <aside className="workspace-key-takeaway">
+            <span>◆ The key takeaway</span>
+            <p>{mainFinding
+              ? text(mainFinding.explanation, "A financial change warrants review.")
+              : "No prioritized diagnosis was supported by this dataset."}</p>
+            <button type="button" onClick={onContinue} disabled={!mainFinding}>
+              Explore the evidence →
+            </button>
+          </aside>
+        </div>
 
         <section className="overview-snapshot" aria-label="Business snapshot">
-          <div><span>Revenue</span><strong>{number(revenue)}</strong><small>Observed</small></div>
-          <div><span>Gross profit</span><strong>{number(grossProfit)}</strong><small>Observed</small></div>
-          <div><span>Gross margin</span><strong>{number(margin, "%")}</strong><small>Observed</small></div>
-          <div><span>Orders</span><strong>{number(orders)}</strong><small>Observed</small></div>
+          {cards.map((item) => (
+            <div key={item.name}>
+              <span>{item.name}</span>
+              <strong>{item.value}</strong>
+              <small>{item.note}</small>
+            </div>
+          ))}
         </section>
 
         <QuarterlyTrends data={analysis.analysis?.quarterly_trend} />
 
-        <section className="executive-summary">
-          <div>
-            <span className="category">Executive summary</span>
-            <h2>{diagnoses.length ? text(diagnoses[0].diagnosis) : "BizLens found no high-confidence diagnosis."}</h2>
-            <p>{diagnoses.length ? "The strongest signal is shown first. The next step is to inspect the evidence behind each finding." : "The available data did not support a strong conclusion."}</p>
-          </div>
-          <div className="summary-meta">
-            <span>Diagnoses</span><strong>{diagnoses.length}</strong>
-            <span>Data quality</span><strong>{quality ? "Reviewed" : "Available"}</strong>
-          </div>
-        </section>
-
         <section className="overview-findings">
-          <div className="section-heading"><span className="category">Top findings</span><span>Evidence-backed</span></div>
-          <div className="finding-list">
-            {diagnoses.map((diagnosis: Diagnosis, index) => (
-              <article key={diagnosis.id ?? diagnosis.code ?? index} className="overview-finding">
-                <span className="finding-index">0{index + 1}</span>
-                <div><span className="finding-category">{text(diagnosis.severity || diagnosis.category, "Business signal")}</span><h3>{text(diagnosis.title || diagnosis.diagnosis)}</h3><p>{text(diagnosis.explanation || diagnosis.description, "Evidence is available in the diagnosis view.")}</p></div>
-                <span className="finding-confidence">{text(diagnosis.confidence, "Reviewed")}</span>
-              </article>
-            ))}
+          <div className="section-heading">
+            <span className="category">Prioritized findings · What deserves your attention</span>
+            <span>Up to three findings</span>
           </div>
+          {diagnoses.length ? (
+            <div className="finding-list">
+              {diagnoses.map((diagnosis: Diagnosis, index) => (
+                <article key={diagnosis.id ?? diagnosis.code ?? index} className="overview-finding">
+                  <span className="finding-index">0{index + 1} · {text(diagnosis.severity, "Signal")}</span>
+                  <div>
+                    <h3>{text(diagnosis.title || diagnosis.diagnosis)}</h3>
+                    <p>{text(diagnosis.explanation || diagnosis.description, "The diagnosis view contains available supporting evidence.")}</p>
+                  </div>
+                  <button className="workspace-show-evidence" type="button" onClick={onContinue}>
+                    Show me why ↗
+                  </button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="quarter-empty">No prioritized diagnosis is supported by the uploaded data.</p>
+          )}
         </section>
-
-        <div className="overview-actions"><button className="button secondary" type="button" onClick={onBack}>Back</button><button className="button primary" type="button" onClick={onContinue}>View diagnoses <span aria-hidden="true">→</span></button></div>
+        <div className="overview-actions">
+          <button className="button secondary" type="button" onClick={onBack}>Back to analysis</button>
+          <button className="button primary" type="button" onClick={onContinue}>
+            View diagnoses <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </div>
     </main>
   );
