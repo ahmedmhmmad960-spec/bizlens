@@ -1,0 +1,13 @@
+/* Guided diagnosis: explicit review focus and truthful post-analysis walkthrough.
+   The API computes all diagnoses before this replay is rendered. */
+.review-focus-note{max-width:760px;margin:16px auto 0;padding:16px 18px;border:1px solid #524725;border-radius:10px;background:rgba(255,216,77,.035);text-align:left}
+.review-focus-note strong{display:block;color:#ffe08a;font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.review-focus-note p{margin:7px 0 0;color:#aeb8c5;font-size:12px;line-height:1.65}
+.replay-review-actions{max-width:620px;margin:26px auto 0;display:flex;align-items:stretch;justify-content:center;gap:12px;flex-wrap:wrap}
+.replay-review-actions .button{min-height:46px;flex:1 1 210px;justify-content:center}
+.replay-screen .replay-row.active{border-left:2px solid var(--accent);background:#1c1d17}
+.replay-screen .replay-row.done>span{color:var(--positive)}
+.replay-screen .replay-row small{color:var(--accent);font-weight:650}
+.replay-screen .replay-status{gap:12px}
+.replay-screen .replay-status small{font-size:11px;color:#98a6b6}
+@media(max-width:700px){.review-focus-note{margin-inline:0}.replay-review-actions{flex-direction:column}.replay-review-actions .button{flex:0 0 auto;width:100%}}
