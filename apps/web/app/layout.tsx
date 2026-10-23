@@ -6,7 +6,12 @@ import "./diagnosis-flow-premium.css";
 import "./demo-premium.css";
 import "./quarterly-trends.css";
 import "./observed-signals.css";
+import "./workspace-restore.css";
 import "./insight.css";
+import "./diagnosis-feed.css";
+import "./what-changed-comparison.css";
+import "./guided-replay.css";
+import "./chart-fidelity.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });

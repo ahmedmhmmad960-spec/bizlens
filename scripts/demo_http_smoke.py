@@ -77,7 +77,11 @@ def ask(analysis_id: str, question: str) -> dict:
 
 def main() -> None:
     ready()
-    print("PASS: Next.js landing responds")
+    _, landing = request("/")
+    check(b"See your business" in landing, "Brand headline is missing from the SSR landing")
+    check(b"Try Interactive Demo" in landing, "Approved one-click demo CTA is missing")
+    check(b"Explore a diagnosis" in landing, "Secondary landing action is missing")
+    print("PASS: Next.js landing and approved visual-entry contract respond")
 
     csv = (ROOT / "apps/web/public/demo/store.csv").read_bytes()
     status, served = request("/demo/store.csv")
