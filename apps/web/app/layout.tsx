@@ -8,6 +8,7 @@ import "./quarterly-trends.css";
 import "./observed-signals.css";
 import "./workspace-restore.css";
 import "./insight.css";
+import "./diagnosis-feed.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
