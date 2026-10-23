@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ShowMeWhy } from "@/components/diagnosis-feed";
 import QuarterlyTrends from "@/components/quarterly-trends";
 import type { AnalysisResponse, Diagnosis } from "@/lib/api";
 
@@ -26,6 +27,7 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
   onContinue: () => void;
   onBack: () => void;
 }) {
+  const [selectedFinding, setSelectedFinding] = useState<Diagnosis | null>(null);
   const metrics = analysis.analysis?.metrics as Record<string, unknown> | undefined;
   const quality = analysis.analysis?.data_quality as Record<string, unknown> | undefined;
   const diagnoses = useMemo(
@@ -80,7 +82,7 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
             <p>{mainFinding
               ? text(mainFinding.explanation, "A financial change warrants review.")
               : "No prioritized diagnosis was supported by this dataset."}</p>
-            <button type="button" onClick={onContinue} disabled={!mainFinding}>
+            <button type="button" onClick={() => { if (mainFinding) setSelectedFinding(mainFinding); }} disabled={!mainFinding}>
               Explore the evidence →
             </button>
           </aside>
@@ -112,7 +114,7 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
                     <h3>{text(diagnosis.title || diagnosis.diagnosis)}</h3>
                     <p>{text(diagnosis.explanation || diagnosis.description, "The diagnosis view contains available supporting evidence.")}</p>
                   </div>
-                  <button className="workspace-show-evidence" type="button" onClick={onContinue}>
+                  <button className="workspace-show-evidence" type="button" onClick={() => setSelectedFinding(diagnosis)}>
                     Show me why ↗
                   </button>
                 </article>
@@ -129,6 +131,7 @@ export default function BusinessOverview({ analysis, onContinue, onBack }: {
           </button>
         </div>
       </div>
+      {selectedFinding ? <ShowMeWhy diagnosis={selectedFinding} onClose={() => setSelectedFinding(null)} /> : null}
     </main>
   );
 }
