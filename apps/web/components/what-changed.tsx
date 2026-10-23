@@ -135,7 +135,7 @@ export default function WhatChanged({ analysis, onBack, onContinue }: Props) {
             Comparison method: midpoint of the observed date range, not calendar
             quarter-on-quarter results. Gross margin differences are percentage
             points (pp), not relative percentages. Financial amounts use the
-            uploaded dataset's units; BizLens has not verified a currency.
+            units of the uploaded dataset; BizLens has not verified a currency.
             An increase or decrease alone does not prove improvement, harm, or causation.
           </p>
         </section>
