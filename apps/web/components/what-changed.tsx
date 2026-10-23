@@ -53,7 +53,9 @@ function formatted(value: number, key: MetricKey) {
 
 function signed(value: number, key: MetricKey) {
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}${formatted(Math.abs(value), key)}${key === "gross_margin" ? " pp" : ""}`;
+  return key === "gross_margin"
+    ? `${sign}${Math.abs(value).toFixed(2)} pp`
+    : `${sign}${formatted(Math.abs(value), key)}`;
 }
 
 function relativeLabel(change: Change) {
