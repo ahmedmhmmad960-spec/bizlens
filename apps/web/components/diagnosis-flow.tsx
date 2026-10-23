@@ -70,7 +70,6 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [replayIndex, setReplayIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -91,9 +90,9 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
       return;
     }
     setError(null);
+    setAnalysis(null);
     setFile(selected);
     setFileName(selected.name);
-    setUploadProgress(100);
   }
 
   async function loadDemo() {
@@ -104,9 +103,9 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
       if (!response.ok) throw new Error("Demo dataset could not be loaded.");
       const blob = await response.blob();
       const demoFile = new File([blob], "store.csv", { type: "text/csv" });
+      setAnalysis(null);
       setFile(demoFile);
       setFileName("store.csv");
-      setUploadProgress(100);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Demo dataset could not be loaded.");
     } finally {
@@ -115,14 +114,11 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
   }
 
   async function runAnalysis() {
-    if (!file) return;
+    if (!file || loading) return;
     setLoading(true);
     setError(null);
-    setUploadProgress(18);
     try {
-      setUploadProgress(45);
       const result = await analyzeCsv(file);
-      setUploadProgress(100);
       setAnalysis(result);
       setReplayIndex(0);
       setScreen("understand");
@@ -165,19 +161,31 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
       <section className="flow-hero question-hero">
         <Badge>Step 1 of 4</Badge>
         <h1>What do you want to understand?</h1>
-        <p>Choose a focus. BizLens will use your data to find evidence-backed answers.</p>
+        <p>Choose an area to review. BizLens analyzes every supported signal in your CSV regardless of your choice.</p>
       </section>
       <section className="question-grid premium-question-grid" aria-label="Business questions">
-        {questions.map(([title, subtitle, icon]) => <button className={`question-card ${question === title ? "selected" : ""}`} key={title} type="button" onClick={() => setQuestion(title)}>
+        {questions.map(([title, subtitle, icon]) => <button className={`question-card ${question === title ? "selected" : ""}`} key={title} type="button" aria-pressed={question === title} onClick={() => setQuestion(title)}>
           <span className="question-icon"><Icon name={icon === "chart" ? "arrow" : icon === "file" ? "file" : "spark"} /></span>
           <span><strong>{title}</strong><small>{subtitle}</small></span><Icon name="arrow" size={16} />
         </button>)}
-        <button className={`question-card primary-path ${question === "Full business diagnosis" ? "selected" : ""}`} type="button" onClick={() => setQuestion("Full business diagnosis")}>
+        <button className={`question-card primary-path ${question === "Full business diagnosis" ? "selected" : ""}`} type="button" aria-pressed={question === "Full business diagnosis"} onClick={() => setQuestion("Full business diagnosis")}>
           <span className="question-icon"><Icon name="spark" /></span>
           <span><Badge tone="accent">Recommended</Badge><strong>Full Diagnosis</strong><small>Let BizLens find what deserves my attention.</small></span><Icon name="arrow" size={16} />
         </button>
       </section>
-      <div className="own-question"><label htmlFor="own-question">Or ask your own question</label><div><input id="own-question" value={customQuestion} onChange={(event) => { setCustomQuestion(event.target.value); if (event.target.value.trim()) setQuestion("Custom"); }} placeholder="e.g. Where did my margin change?" /><Button onClick={() => { if (customQuestion.trim()) setQuestion("Custom"); next(); }} icon="arrow">Continue</Button></div></div>
+      <div className="own-question">
+        <label htmlFor="own-question">Or write a review focus of your own</label>
+        <div><input id="own-question" value={customQuestion} onChange={(event) => {
+          setCustomQuestion(event.target.value);
+          if (event.target.value.trim()) setQuestion("Custom");
+          else if (question === "Custom") setQuestion("Full business diagnosis");
+        }} placeholder="e.g. Where did my margin change?" /></div>
+      </div>
+      <div className="review-focus-note" role="status">
+        <strong>Review focus: {question === "Custom" ? customQuestion.trim() : question}</strong>
+        <p>This choice is for navigating your review, not a filter on calculations. All supported diagnoses are still checked.</p>
+      </div>
+      <div className="flow-actions"><Button onClick={next} icon="arrow">Continue to data</Button></div>
     </FlowShell>;
   }
 
@@ -186,13 +194,13 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
       <section className="flow-hero upload-hero">
         <Badge>Step 2 of 4</Badge>
         <h1>Bring your business data.<br />BizLens will do the rest.</h1>
-        <p>Upload your orders CSV and BizLens will analyze it for business signals, problems, opportunities, and actions.</p>
+        <p>Upload your sales CSV. BizLens checks every supported business signal; your earlier review focus does not change the calculations.</p>
       </section>
       <section className={`upload-card ${file ? "success" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); selectFile(event.dataTransfer.files?.[0] ?? null); }}>
         <input ref={inputRef} type="file" accept=".csv,text/csv" hidden onChange={(event) => selectFile(event.target.files?.[0] ?? null)} />
         {!file && !loading && <><span className="upload-icon"><Icon name="upload" size={25} /></span><h2>Drop your CSV here</h2><p>or <button type="button" onClick={() => inputRef.current?.click()}>browse your files</button></p><small>CSV up to 50 MB</small></>}
-        {loading && <><span className="upload-icon active"><Icon name="file" size={25} /></span><h2>Preparing your data</h2><p>{fileName} is ready for analysis…</p><div className="progress-bar"><span style={{ width: `${uploadProgress}%` }} /></div><small>{uploadProgress}% ready</small></>}
-        {file && !loading && <><span className="upload-icon success-icon"><Icon name="check" size={25} /></span><h2>{fileName} is ready</h2><p>CSV selected · ready for diagnosis</p><Badge tone="positive">Upload complete</Badge><button className="text-action" type="button" onClick={() => { setFile(null); setFileName(null); setUploadProgress(0); }}>Choose another file</button></>}
+        {loading && <><span className="upload-icon active"><Icon name="file" size={25} /></span><h2>Analyzing the selected CSV</h2><p>{fileName} is being processed by the BizLens engine.</p><small>The next screen appears once the analysis is complete.</small></>}
+        {file && !loading && <><span className="upload-icon success-icon"><Icon name="check" size={25} /></span><h2>{fileName} is ready</h2><p>CSV selected · ready for diagnosis</p><Badge tone="positive">File selected</Badge><button className="text-action" type="button" onClick={() => { setFile(null); setFileName(null); setAnalysis(null); }}>Choose another file</button></>}
       </section>
       {error ? <div className="flow-error" role="alert">{error}</div> : null}
       <div className="upload-actions"><div className="trust"><Icon name="lock" size={16} /><span><strong>Your data stays yours.</strong> Files are only used for your diagnosis.</span></div><Button variant="secondary" onClick={() => void loadDemo()} icon="spark">Try the demo dataset</Button></div>
@@ -205,18 +213,18 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
   if (screen === "understand") {
     const items = [
       ["Orders", formatNumber(metrics?.orders)],
-      ["Date range", String(analysis.analysis.date_range || "Available")],
-      ["Products", formatNumber(metrics?.products)],
-      ["Customers", formatNumber(metrics?.customers)],
+      ["Rows analyzed", formatNumber(analysis.analysis.rows)],
+      ["Gross profit", formatNumber(metrics?.gross_profit)],
+      ["Gross margin", typeof metrics?.gross_margin === "number" ? `${formatNumber(metrics.gross_margin)}%` : "Not available"],
       ["Revenue", formatNumber(metrics?.revenue)],
       ["Cost data", quality?.has_cost ? "Available" : "Not available"],
       ["Discounts", quality?.has_discount ? "Available" : "Not available"],
-      ["Data status", analysis.success ? "Verified" : "Needs review"],
+      ["Analysis status", analysis.success ? "Completed" : "Needs review"],
     ];
     const hasCost = Boolean(quality?.has_cost);
     return <FlowShell step={progress} onBack={back}>
       <section className="flow-hero compact"><Badge>Step 3 of 4</Badge><h1>Understanding your business</h1><p>Before diagnosing anything, BizLens maps the file into a business picture and checks which conclusions are actually supported.</p></section>
-      <div className="snapshot-layout"><section className="snapshot-card"><div className="card-title"><div><span className="category">Business snapshot</span><h2>Online store orders</h2></div><Badge tone="positive">Verified</Badge></div><div className="snapshot-grid">{items.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><Icon name="check" size={14} /></div>)}</div></section><aside className="understanding-note"><span className="question-icon"><Icon name="spark" /></span><span className="category">What we can safely see</span><h3>BizLens only diagnoses signals supported by the uploaded data.</h3><p>Available fields determine which metrics, diagnoses, impacts, and recommendations can be shown.</p></aside></div>
+      <div className="snapshot-layout"><section className="snapshot-card"><div className="card-title"><div><span className="category">Business snapshot</span><h2>{fileName ?? "Uploaded sales data"}</h2></div><Badge tone="positive">Analyzed</Badge></div><div className="snapshot-grid">{items.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><Icon name="check" size={14} /></div>)}</div></section><aside className="understanding-note"><span className="question-icon"><Icon name="spark" /></span><span className="category">What we can safely see</span><h3>BizLens only diagnoses signals supported by the uploaded data.</h3><p>Available fields determine which metrics, diagnoses, impacts, and recommendations can be shown.</p></aside></div>
       <div className={`interpretation ${hasCost ? "" : "warning"}`}><span>{hasCost ? "✓" : "!"}</span><div><strong>{hasCost ? "Profitability analysis is available." : "Profitability analysis is limited."}</strong><p>{hasCost ? "Revenue and cost fields are present, so BizLens can evaluate gross profit and margin." : "No cost field was found, so BizLens will avoid unsupported profitability findings."}</p></div></div>
       <div className="flow-actions"><Button onClick={next} icon="arrow">Check data quality</Button></div>
     </FlowShell>;
@@ -241,10 +249,43 @@ export default function DiagnosisFlow({ initialScreen = "question", onComplete }
   }
 
   const step = replaySteps[replayIndex];
-  const stepDescription = String(currentReplayStep?.description || "BizLens is working through the verified business evidence.");
+  const stepDescription = String(currentReplayStep?.description || "Review the evidence and conclusions already produced from the uploaded CSV.");
   const replayPercent = Math.round(((replayIndex + 1) / replaySteps.length) * 100);
   return <FlowShell step={4} onBack={back}>
-    <section className="replay-screen"><Badge tone="accent">Analysis replay</Badge><h1>Building your business diagnosis</h1><p>Watch BizLens move from raw data to evidence-backed conclusions.</p><div className="premium-replay-progress" aria-label={`Analysis progress: ${replayPercent}%`}><span style={{ width: `${replayPercent}%` }} /></div><div className="replay-insight"><span>Current step</span><strong>{stepDescription}</strong></div><div className="replay-card">{replaySteps.map((item, index) => { const done = index < replayIndex; const active = index === replayIndex; return <div className={`replay-row ${done ? "done" : ""} ${active ? "active" : ""}`} key={`${item}-${index}`}><span>{done ? <Icon name="check" size={13} /> : index + 1}</span><strong>{item}</strong>{active ? <small>Working…</small> : null}</div>; })}</div><div className="replay-status"><span className="replay-dot" />{step}<small>{replayPercent}%</small></div><div className="flow-actions"><Button onClick={() => replayIndex < replaySteps.length - 1 ? setReplayIndex((value) => value + 1) : onComplete(analysis)}>{replayIndex < replaySteps.length - 1 ? "Continue analysis" : "View business overview"} <span>→</span></Button></div></section>
+    <section className="replay-screen">
+      <Badge tone="positive">Analysis complete · Review</Badge>
+      <h1>Review how BizLens reached its findings.</h1>
+      <p>Analysis has already finished. Walk through the recorded stages to understand the evidence, or open your business overview now.</p>
+      <div className="premium-replay-progress" role="progressbar" aria-label="Review walkthrough progress"
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={replayPercent}>
+        <span style={{ width: `${replayPercent}%` }} />
+      </div>
+      <div className="replay-insight">
+        <span>Review checkpoint {replayIndex + 1} of {replaySteps.length}</span>
+        <strong>{stepDescription}</strong>
+      </div>
+      <div className="replay-card" aria-label="Completed analysis checkpoints">
+        {replaySteps.map((item, index) => (
+          <div className={`replay-row ${index === replayIndex ? "active" : "done"}`}
+            key={`${item}-${index}`} aria-current={index === replayIndex ? "step" : undefined}>
+            <span><Icon name="check" size={13} /></span>
+            <strong>{item}</strong>
+            {index === replayIndex ? <small>Viewing</small> : null}
+          </div>
+        ))}
+      </div>
+      <div className="replay-status">{step}<small>Review {replayIndex + 1}/{replaySteps.length}</small></div>
+      <div className="replay-review-actions">
+        {replayIndex < replaySteps.length - 1 ? (
+          <Button onClick={() => setReplayIndex((value) => value + 1)} icon="arrow">Next checkpoint</Button>
+        ) : (
+          <Button onClick={() => onComplete(analysis)} icon="arrow">View business overview</Button>
+        )}
+        {replayIndex < replaySteps.length - 1 ? (
+          <Button variant="secondary" onClick={() => onComplete(analysis)}>Skip review · View overview</Button>
+        ) : null}
+      </div>
+    </section>
   </FlowShell>;
 }
 
