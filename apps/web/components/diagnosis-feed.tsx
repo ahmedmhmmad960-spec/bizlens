@@ -39,17 +39,39 @@ function impact(diagnosis: Diagnosis) {
   };
 }
 
-function ShowMeWhy({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () => void }) {
+export function ShowMeWhy({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const rows = entries(diagnosis);
   const impactState = impact(diagnosis);
   useEffect(() => {
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = previous; };
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = previous; previouslyFocused?.focus(); };
   }, [onClose]);
 
   const steps = [
@@ -63,7 +85,7 @@ function ShowMeWhy({ diagnosis, onClose }: { diagnosis: Diagnosis; onClose: () =
   ] as const;
 
   return <div className="dialog-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <aside className="why-dialog" role="dialog" aria-modal="true" aria-labelledby="why-title">
+    <aside ref={dialogRef} className="why-dialog" role="dialog" aria-modal="true" aria-labelledby="why-title">
       <header className="dialog-header"><div><span className="flow-kicker">{text(diagnosis.category, "Business case")} · Evidence view</span><h2 id="why-title">{text(diagnosis.diagnosis)}</h2></div><button ref={closeRef} className="dialog-close" onClick={onClose} aria-label="Close evidence view">×</button></header>
       <div className="reasoning-list">
         {steps.map(([title, content, badge], index) => <article className="reasoning-step" key={title}><div className="reasoning-rail"><span>{index + 1}</span>{index < steps.length - 1 && <i />}</div><div><div className="reasoning-title"><h3>{title}</h3>{badge && <span className="trust-badge">{badge}</span>}</div>{Array.isArray(content) ? <div className="evidence-grid">{content.map((row) => <div className="evidence-item" key={`${row.label}-${row.value}`}><span>{row.label}</span><strong className={`tone-${row.tone}`}>{row.value}</strong></div>)}</div> : <p>{content}</p>}</div></article>)}
