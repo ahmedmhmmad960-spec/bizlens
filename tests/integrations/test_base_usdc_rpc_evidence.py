@@ -15,6 +15,7 @@ from integrations.base_usdc.rpc_evidence import (
     BasePublicRpc,
     inspect_invoice,
     inspect_invoices,
+    _NoRedirect,
 )
 
 TX = "0x" + "1" * 64
@@ -254,3 +255,10 @@ def test_batch_distinct_events_do_not_block_each_other():
 def test_public_rpc_batch_size_is_bounded():
     with pytest.raises(ValueError, match="At most 20"):
         inspect_invoices([invoice()] * 21, FakeRpc())
+
+def test_rpc_redirects_cannot_escape_preselected_base_host():
+    # No network request; the handler must refuse even an HTTPS redirect.
+    handler = _NoRedirect()
+    assert handler.redirect_request(
+        None, None, 302, "Found", {}, "https://example.net/redirect-target"
+    ) is None
