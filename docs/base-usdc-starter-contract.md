@@ -118,6 +118,31 @@ Official references:
 - https://ethereum.org/developers/docs/apis/json-rpc/
 - https://developers.circle.com/stablecoins/usdc-contract-addresses
 
+## BizLens workspace and HTTP integration (draft PR)
+
+The main BizLens workspace now includes a **Base / USDC** evidence tab after
+starting an analysis. It does not change the deterministic Commerce metrics.
+
+- `GET /base-usdc/demo` returns the same explicitly synthetic
+  offline matching results as the developer CLI.
+- `POST /base-usdc/inspect` accepts strict invoice fields and never exposes a
+  wallet-signing or transaction-sending function. The server returns HTTP 503
+  and `mode=disabled` unless an operator explicitly sets
+  `BIZLENS_BASE_RPC_ENABLED=1`. **Do not enable this in a public deployment
+  without separate authentication, rate limits and abuse controls.**
+- Next.js forwards the two endpoints through
+  `/api/base-usdc/demo` and `/api/base-usdc/inspect` using the same
+  private FastAPI origin as the existing analysis API. Responses use
+  `Cache-Control: no-store` where relevant.
+- A live inspection result is labeled as **RPC-observed evidence**; it is not
+  a 'paid' decision, an L1 finality proof or an update to the sales report.
+- The sample tab uses synthetic addresses/transactions; it must never link
+  those placeholders to a real explorer or misrepresent them as chain data.
+
+The smoke test `scripts/demo_http_smoke.py` now verifies both the offline
+sample through the real web proxy and the explicit default RPC-disable path.
+CI clears the enable flag and makes **zero live chain calls**.
+
 ## Open scope and next quality gates
 
 This draft PR supplies the standalone offline matcher, a bounded optional
