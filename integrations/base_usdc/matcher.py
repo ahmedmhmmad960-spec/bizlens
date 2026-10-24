@@ -17,6 +17,8 @@ USDC_CONTRACTS = {
 }
 USDC_DECIMALS = 6
 _AMOUNT_SCALE = 10**USDC_DECIMALS
+_MAX_AMOUNT_RAW = 10**24 - 1  # V1 cap: < 10**18 whole USDC units.
+_AMOUNT_FORMAT = re.compile(r"(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,6})?\Z")
 _ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}\Z")
 _HASH = re.compile(r"0x[0-9a-fA-F]{64}\Z")
 
@@ -42,16 +44,19 @@ def _raw_amount(value: str) -> int:
     """Reject rounding, floats and unsupported USDC precision."""
     if not isinstance(value, str):
         raise ValueError("Invoice USDC amount must be a decimal string.")
+    if not _AMOUNT_FORMAT.fullmatch(value):
+        raise ValueError(
+            "Invoice USDC amount must use plain decimal notation with "
+            "at most 18 whole digits and six decimal places."
+        )
     try:
-        amount = Decimal(value)
+        scaled = Decimal(value) * _AMOUNT_SCALE
     except (InvalidOperation, ValueError) as exc:
         raise ValueError("Invoice USDC amount is not decimal.") from exc
-    if not amount.is_finite() or amount <= 0:
-        raise ValueError("Invoice USDC amount must be finite and positive.")
-    scaled = amount * _AMOUNT_SCALE
-    if scaled != scaled.to_integral_value():
-        raise ValueError("Invoice USDC amount exceeds six decimal places.")
-    return int(scaled)
+    raw = int(scaled)
+    if raw <= 0 or raw > _MAX_AMOUNT_RAW:
+        raise ValueError("Invoice USDC amount must be positive and within the V1 limit.")
+    return raw
 
 
 @dataclass(frozen=True)
@@ -66,6 +71,8 @@ class Invoice:
     def __post_init__(self) -> None:
         if not isinstance(self.invoice_id, str) or not self.invoice_id.strip():
             raise ValueError("invoice_id is required.")
+        if len(self.invoice_id) > 80:
+            raise ValueError("invoice_id must be at most 80 characters.")
         if type(self.chain_id) is not int or self.chain_id not in USDC_CONTRACTS:
             raise ValueError("Only Base mainnet and Base Sepolia are supported.")
         _address(self.recipient, "recipient")
@@ -95,8 +102,8 @@ class TransferRecord:
             raise ValueError("chain_id must be a positive integer.")
         _address(self.token_contract, "token_contract")
         _address(self.recipient, "recipient")
-        if type(self.amount_raw) is not int or self.amount_raw < 0:
-            raise ValueError("amount_raw must be a nonnegative integer.")
+        if type(self.amount_raw) is not int or not 0 <= self.amount_raw <= _MAX_AMOUNT_RAW:
+            raise ValueError("amount_raw must be a bounded nonnegative integer.")
 
 
 @dataclass(frozen=True)
