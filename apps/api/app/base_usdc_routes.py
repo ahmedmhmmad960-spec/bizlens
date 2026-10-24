@@ -3,11 +3,15 @@
 The optional live endpoint is DISABLED by default. Only explicit deployment
 opt-in enables a bounded read-only RPC call to the two hard-coded Base hosts.
 """
+import hmac
 import os
+import threading
+import time
+from collections import deque
 from dataclasses import asdict
 from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,6 +20,25 @@ from integrations.base_usdc.matcher import Invoice
 from integrations.base_usdc.rpc_evidence import BasePublicRpc, inspect_invoice
 
 router = APIRouter(prefix="/base-usdc", tags=["base-usdc-evidence"])
+
+# Single-process demo guard. Public deployments need shared rate limits at a gateway.
+_MAX_RPC_PER_MINUTE = 10
+_RPC_WINDOW_SECONDS = 60
+_rpc_lock = threading.Lock()
+_rpc_slots = threading.BoundedSemaphore(2)
+_recent_rpc_calls: deque[float] = deque()
+
+
+def _admit_rpc() -> bool:
+    with _rpc_lock:
+        now = time.monotonic()
+        while _recent_rpc_calls and now - _recent_rpc_calls[0] >= _RPC_WINDOW_SECONDS:
+            _recent_rpc_calls.popleft()
+        if len(_recent_rpc_calls) >= _MAX_RPC_PER_MINUTE:
+            return False
+        _recent_rpc_calls.append(now)
+        return True
+
 
 
 class InvoiceInspectionRequest(BaseModel):
@@ -36,9 +59,13 @@ def base_usdc_demo() -> dict:
 
 
 @router.post("/inspect", response_model=None)
-def base_usdc_inspect(payload: InvoiceInspectionRequest) -> dict | JSONResponse:
+def base_usdc_inspect(
+    payload: InvoiceInspectionRequest,
+    inspection_key: Annotated[str | None, Header(alias="X-BizLens-Rpc-Key")] = None,
+) -> JSONResponse:
     """Optional on-demand public receipt observation; never paid status."""
-    if os.getenv("BIZLENS_BASE_RPC_ENABLED") != "1":
+    configured = os.getenv("BIZLENS_BASE_RPC_TOKEN", "")
+    if os.getenv("BIZLENS_BASE_RPC_ENABLED") != "1" or len(configured) < 32:
         return JSONResponse(
             status_code=503,
             headers={"Cache-Control": "no-store"},
@@ -47,6 +74,12 @@ def base_usdc_inspect(payload: InvoiceInspectionRequest) -> dict | JSONResponse:
                 "error": "Live RPC inspection is disabled in this demo environment.",
                 "mode": "disabled",
             },
+        )
+    if not hmac.compare_digest(inspection_key or "", configured):
+        return JSONResponse(
+            status_code=403,
+            headers={"Cache-Control": "no-store"},
+            content={"success": False, "error": "Authorized inspector access required."},
         )
     try:
         invoice = Invoice(
@@ -67,11 +100,32 @@ def base_usdc_inspect(payload: InvoiceInspectionRequest) -> dict | JSONResponse:
             },
         )
 
-    finding = inspect_invoice(invoice, BasePublicRpc(invoice.chain_id))
-    return {
-        "success": True,
-        "mode": "read_only_rpc",
-        "network": "Base Mainnet" if invoice.chain_id == 8453 else "Base Sepolia",
-        "warning": "Observed Base L2 RPC evidence is NOT proof of final settlement or paid status.",
-        "result": asdict(finding),
-    }
+    if not _rpc_slots.acquire(blocking=False):
+        return JSONResponse(
+            status_code=429,
+            headers={"Cache-Control": "no-store", "Retry-After": "10"},
+            content={"success": False, "error": "RPC inspection is busy. Try later."},
+        )
+    try:
+        if not _admit_rpc():
+            return JSONResponse(
+                status_code=429,
+                headers={"Cache-Control": "no-store", "Retry-After": "60"},
+                content={"success": False, "error": "RPC demo rate limit reached. Try later."},
+            )
+        finding = inspect_invoice(invoice, BasePublicRpc(invoice.chain_id))
+        return JSONResponse(
+            headers={"Cache-Control": "no-store"},
+            content={
+                "success": True,
+                "mode": "read_only_rpc",
+                "network": "Base Mainnet" if invoice.chain_id == 8453 else "Base Sepolia",
+                "warning": (
+                    "Observed Base L2 RPC evidence is NOT proof of "
+                    "final settlement or paid status."
+                ),
+                "result": asdict(finding),
+            },
+        )
+    finally:
+        _rpc_slots.release()
