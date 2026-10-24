@@ -35,6 +35,29 @@ jobs:
       - name: Tests
         run: python -m pytest
 
+      - name: Verify isolated wheel install and developer CLI
+        run: |
+          python -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/bizlens-wheel" .
+          python -m pip install --no-deps --target "$RUNNER_TEMP/bizlens-site" \
+            "$RUNNER_TEMP/bizlens-wheel"/bizlens-*.whl
+          (
+            cd "$RUNNER_TEMP"
+            PYTHONPATH="$RUNNER_TEMP/bizlens-site" python -m bizlens_toolkit usdc-demo
+          )
+
+      - name: Developer Toolkit golden and Base contract
+        run: |
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/order_lines.csv \
+            --expected tests/fixtures/golden/order_lines.expected.json
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/profit_reversal.csv \
+            --expected tests/fixtures/golden/profit_reversal.expected.json
+          python -m bizlens_toolkit usdc-demo
+          python -m examples.developer_toolkit.quickstart
+          # Real explorer reference is pinned; CI does not make live chain calls.
+          python -m examples.developer_toolkit.base_sepolia_reference
+
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
@@ -69,6 +92,7 @@ jobs:
       # Force the deterministic rule-based provider. Never spend AI tokens in CI.
       OPENAI_API_KEY: ""
       BIZLENS_AI_MODEL: ""
+      BIZLENS_BASE_RPC_ENABLED: ""
       BIZLENS_API_URL: http://127.0.0.1:8000
       BIZLENS_WEB_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"

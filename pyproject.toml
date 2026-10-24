@@ -17,6 +17,9 @@ dependencies = [
   "uvicorn[standard]>=0.34,<1",
 ]
 
+[project.scripts]
+bizlens-toolkit = "bizlens_toolkit.__main__:main"
+
 [project.optional-dependencies]
 dev = [
   "httpx>=0.28,<1",
@@ -26,7 +29,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["apps*", "core*", "ai*"]
+include = ["apps*", "core*", "ai*", "integrations*", "bizlens_toolkit*"]
 exclude = ["tests*", "demo*"]
 
 [tool.pytest.ini_options]
@@ -41,7 +44,7 @@ line-length = 100
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["ai", "apps", "core"]
+known-first-party = ["ai", "apps", "core", "integrations", "bizlens_toolkit"]
 
 [tool.ruff.format]
 quote-style = "double"

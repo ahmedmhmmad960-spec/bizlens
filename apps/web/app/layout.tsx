@@ -12,6 +12,7 @@ import "./diagnosis-feed.css";
 import "./what-changed-comparison.css";
 import "./guided-replay.css";
 import "./chart-fidelity.css";
+import "./base-usdc-evidence.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });

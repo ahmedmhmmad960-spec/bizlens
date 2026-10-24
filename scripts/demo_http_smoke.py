@@ -150,6 +150,36 @@ def main() -> None:
     check(wrong_format.get("success") is False, "Non-CSV upload should fail")
     print("PASS: invalid questions, unknown sessions and misleading CSV data fail safely")
 
+    # Optional Base evidence adapter must stay synthetic / disabled in default CI.
+    base_status, base_raw = request("/api/base-usdc/demo")
+    check(base_status == 200, "Base synthetic fixture API did not respond")
+    base_fixture = json.loads(base_raw)
+    check(base_fixture.get("success") is True, "Base synthetic adapter did not succeed")
+    check(base_fixture.get("source") == "synthetic_fixture", "Base fixture lacks provenance")
+    check(base_fixture.get("real_transaction") is False, "Synthetic transaction mislabelled")
+    check(base_fixture.get("onchain_verified") is False, "Fabricated onchain proof")
+    check(
+        [item["status"] for item in base_fixture["results"]]
+        == ["candidate_match", "partial", "missing"],
+        "Base example status did not use deterministic matching",
+    )
+    print("PASS: independent Base USDC synthetic evidence behind real Next API")
+
+    inspect_payload = {
+        "invoice_id": "SYNTH-001", "chain_id": 84532,
+        "recipient": "0x" + "a" * 40,
+        "amount_usdc": "12.345678",
+        "tx_hash": "0x" + "1" * 64,
+        "log_index": 0,
+    }
+    base_status, base_raw = request(
+        "/api/base-usdc/inspect",
+        json.dumps(inspect_payload).encode(), "application/json",
+    )
+    check(base_status == 503, "Public Base RPC must be opt-in, not active in CI")
+    check(json.loads(base_raw).get("mode") == "disabled", "RPC disable reason missing")
+    print("PASS: disabled live Base RPC cannot fabricate settlement in default CI")
+
     print("DEMO_HTTP_JOURNEY: PASS")
 
 

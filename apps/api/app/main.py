@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ai.client.openai_provider import OpenAIProvider
 from ai.client.rule_based_provider import RuleBasedProvider
+from apps.api.app.base_usdc_routes import router as base_usdc_router
 from core.analysis.service import AnalysisService
 
 load_dotenv()
@@ -23,6 +24,7 @@ ai_model = os.getenv("BIZLENS_AI_MODEL")
 ai_provider = OpenAIProvider() if api_key and ai_model else RuleBasedProvider()
 analysis_service = AnalysisService(ai_provider)
 analysis_store: dict[str, dict[str, Any]] = {}
+app.include_router(base_usdc_router)
 
 
 @app.get("/")
