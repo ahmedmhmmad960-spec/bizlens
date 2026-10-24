@@ -58,14 +58,6 @@ jobs:
           # Real explorer reference is pinned; CI does not make live chain calls.
           python -m examples.developer_toolkit.base_sepolia_reference
 
-      # ONE-SHOT read-only diagnostic for PR #24; delete after observing the result.
-      # No signing, paid APIs, keys, transaction submission or automatic retries.
-      - name: One-shot external Base Sepolia receipt observation
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 24 }}
-        timeout-minutes: 2
-        continue-on-error: true
-        run: python -m examples.developer_toolkit.base_sepolia_reference --inspect
-
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
