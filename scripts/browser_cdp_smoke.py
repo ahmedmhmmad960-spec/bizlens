@@ -94,7 +94,8 @@ class Cdp:
     def call(self, method, params=None):
         self.seq += 1
         uid = self.seq
-        self.send_frame(1, json.dumps({"id": uid, "method": method, "params": params or {}}).encode())
+        payload = {"id": uid, "method": method, "params": params or {}}
+        self.send_frame(1, json.dumps(payload).encode())
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             item = self.recv_message()
@@ -158,15 +159,28 @@ def main():
         browser.wait("!!document.querySelector('#hero-title')", label="SSR landing")
         browser.wait("document.querySelectorAll('button').length > 3", label="landing controls")
         time.sleep(1)  # Allow Next.js to hydrate click handlers after SSR.
-        browser.js("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Try Interactive Demo')).click()")
+        browser.js(
+            "Array.from(document.querySelectorAll('button'))"
+            ".find(b=>b.textContent.includes('Try Interactive Demo')).click()"
+        )
         browser.wait(
-            "!!Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim().includes('Base / USDC'))",
+            "!!Array.from(document.querySelectorAll('button'))"
+            ".find(b=>b.textContent.trim().includes('Base / USDC'))",
             label="sample analysis loaded", timeout=50,
         )
         print("BROWSER PASS: Chrome click loads commerce workspace", flush=True)
-        browser.js("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim().includes('Base / USDC')).click()")
-        browser.wait("document.body.innerText.includes('Match an invoice to transaction evidence.')", label="Base panel")
-        browser.js("Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Run offline sample')).click()")
+        browser.js(
+            "Array.from(document.querySelectorAll('button'))"
+            ".find(b=>b.textContent.trim().includes('Base / USDC')).click()"
+        )
+        browser.wait(
+            "document.body.innerText.includes('Match an invoice to transaction evidence.')",
+            label="Base panel",
+        )
+        browser.js(
+            "Array.from(document.querySelectorAll('button'))"
+            ".find(b=>b.textContent.includes('Run offline sample')).click()"
+        )
         browser.wait("document.body.innerText.includes('SYNTH-003')", label="synthetic Base data")
         visible = browser.js("document.querySelector('.base-evidence-output')?.innerText")
         for expected in (
