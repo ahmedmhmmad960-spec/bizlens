@@ -4,10 +4,10 @@ This module never connects to an RPC, verifies receipts, moves funds, or marks
 an invoice paid. A candidate match is NOT proof of on-chain settlement.
 """
 
+import re
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 from typing import Literal
-import re
 
 
 # Circle-issued native USDC contracts, not bridged USDbC.
@@ -122,25 +122,46 @@ def match_invoice(invoice: Invoice, records: list[TransferRecord]) -> MatchResul
     reference is ambiguous and cannot be reported as matched.
     """
     if invoice.tx_hash is None:
-        return _result(invoice, "missing", "No transaction reference supplied; no chain lookup was made.")
+        return _result(
+            invoice, "missing",
+            "No transaction reference supplied; no chain lookup was made.",
+        )
 
     matching_tx = [r for r in records if _hash(r.tx_hash) == _hash(invoice.tx_hash)]
     if invoice.log_index is not None:
         matching_tx = [r for r in matching_tx if r.log_index == invoice.log_index]
     if not matching_tx:
-        return _result(invoice, "missing", "Referenced transfer was not present in the supplied records.")
+        return _result(
+            invoice, "missing",
+            "Referenced transfer was not present in the supplied records.",
+        )
     if len(matching_tx) > 1:
-        return _result(invoice, "duplicate", "Multiple supplied records use the same invoice reference.")
+        return _result(
+            invoice, "duplicate",
+            "Multiple supplied records use the same invoice reference.",
+        )
 
     record = matching_tx[0]
     if record.chain_id != invoice.chain_id:
-        return _result(invoice, "wrong_chain", "Supplied transfer belongs to a different chain.", record)
+        return _result(
+            invoice, "wrong_chain",
+            "Supplied transfer belongs to a different chain.",
+            record,
+        )
     if _address(record.token_contract, "token_contract") != _address(
         USDC_CONTRACTS[invoice.chain_id], "expected_token"
     ):
-        return _result(invoice, "wrong_token", "Token is not Circle-issued native USDC on this chain.", record)
+        return _result(
+            invoice, "wrong_token",
+            "Token is not Circle-issued native USDC on this chain.",
+            record,
+        )
     if _address(record.recipient, "recipient") != _address(invoice.recipient, "recipient"):
-        return _result(invoice, "wrong_address", "Transfer recipient differs from the invoice.", record)
+        return _result(
+            invoice, "wrong_address",
+            "Transfer recipient differs from the invoice.",
+            record,
+        )
 
     expected_raw = _raw_amount(invoice.amount_usdc)
     if record.amount_raw < expected_raw:
