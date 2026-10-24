@@ -126,6 +126,10 @@ def base_usdc_inspect(
             content={
                 "success": True,
                 "mode": "read_only_rpc",
+                # A successful HTTP request is NOT a verified payment.
+                "evidence_status": "rpc_observed" if finding.rpc_observed else "unconfirmed",
+                "invoice_paid": False,
+                "settlement_finality_established": False,
                 "network": "Base Mainnet" if invoice.chain_id == 8453 else "Base Sepolia",
                 "warning": (
                     "Observed Base L2 RPC evidence is NOT proof of "
