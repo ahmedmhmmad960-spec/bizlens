@@ -74,6 +74,9 @@ def test_explicit_opt_in_still_remains_evidence_only(monkeypatch):
     assert response.status_code == 200
     assert data["mode"] == "read_only_rpc"
     assert data["result"]["rpc_observed"] is True
+    assert data["evidence_status"] == "rpc_observed"
+    assert data["invoice_paid"] is False
+    assert data["settlement_finality_established"] is False
     assert "NOT proof of final settlement" in data["warning"]
     assert "paid" not in data["result"]["status"]
 
@@ -174,3 +177,31 @@ def test_non_ascii_operator_header_is_rejected_without_internal_error(monkeypatc
     )
     assert invalid.status_code == 403
     assert TEST_RPC_TOKEN not in invalid.body.decode("utf-8")
+
+
+def test_successful_http_response_cannot_claim_payment_when_rpc_unavailable(monkeypatch):
+    """Transport success is never evidence of a verified receipt or paid invoice."""
+    monkeypatch.setenv("BIZLENS_BASE_RPC_ENABLED", "1")
+    monkeypatch.setenv("BIZLENS_BASE_RPC_TOKEN", TEST_RPC_TOKEN)
+    monkeypatch.setattr(routes, "BasePublicRpc", lambda chain: object())
+    monkeypatch.setattr(routes, "_admit_rpc", lambda: True)
+    monkeypatch.setattr(
+        routes, "inspect_invoice",
+        lambda invoice, rpc: ReceiptObservation(
+            invoice_id=invoice.invoice_id,
+            status="rpc_unavailable",
+            explanation="Read-only public RPC unavailable (network_error).",
+            chain_id=invoice.chain_id,
+            rpc_observed=False,
+        ),
+    )
+    response = client.post("/base-usdc/inspect", json=PAYLOAD, headers=AUTH)
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    body = response.json()
+    assert body["success"] is True  # HTTP operation accepted, NOT payment evidence.
+    assert body["evidence_status"] == "unconfirmed"
+    assert body["result"]["status"] == "rpc_unavailable"
+    assert body["result"]["rpc_observed"] is False
+    assert body["invoice_paid"] is False
+    assert body["settlement_finality_established"] is False
