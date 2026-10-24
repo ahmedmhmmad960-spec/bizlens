@@ -1,12 +1,24 @@
 # BizLens V1 — Manual browser and accessibility acceptance checklist
 
-**Status: NOT YET EXECUTED.** This is a test plan, **not** evidence of browser
-compatibility, accessibility conformance, or a release sign-off.
+**Status: automated headless Chrome smoke PASSED; manual review OPEN.**
+This is a test and acceptance plan, **not** broad browser compatibility,
+accessibility certification, or owner release sign-off.
 
-The existing GitHub CI exercises Python, Next.js lint/build, and real HTTP
-requests through the running Next.js ↔ FastAPI apps. It does **not** run a
-graphical browser or test React event timing, mobile layout or assistive
-technologies. Keep PR #24 in draft until the owner/reviewer signs this off.
+GitHub Actions now also launches a real installed **Chrome headless browser**
+and exercises client-side React interactions against running Next.js and
+FastAPI — without Playwright dependencies, keys, transactions or live RPC.
+The [first successful browser run](https://github.com/ahmedmhmmad960-spec/bizlens/actions/runs/40102231428)
+at commit `e06eec323952a822064cf57105d109414a18190c`
+verified the real **Try Interactive Demo → Workspace → Base / USDC →
+Run offline sample** click path, synthetic evidence labels and a 390px
+mobile viewport with no horizontal overflow. The run published [desktop
+and mobile Chrome screenshots](https://github.com/ahmedmhmmad960-spec/bizlens/actions/runs/40102231428/artifacts/12563058341)
+with a 3-day retention, showing synthetic sample data and no secrets.
+
+**Scope boundary:** a headless Chrome smoke is not a human visual review,
+full keyboard/screen-reader test, Safari/Firefox compatibility evaluation,
+live-RPC inspection, or asynchronous race-condition test. Those manual
+checks remain open. Keep PR #24 draft until reviewer/owner approval.
 
 ## Test environment boundaries
 
@@ -58,6 +70,10 @@ technologies. Keep PR #24 in draft until the owner/reviewer signs this off.
 
 ## Automated boundary checks already enforced
 
+- Headless Chrome UI smoke `scripts/browser_cdp_smoke.py` uses only the Python
+  standard library and the already-installed GitHub runner Chrome. It makes
+  real DOM click interactions, validates rendered USDC sample states and tests
+  a 390px mobile viewport. The stable run is linked above.
 - An unverified or inaccessible RPC returns `evidence_status=unconfirmed`,
   `invoice_paid=false`, `settlement_finality_established=false`. Successful
   HTTP transport does not imply payment settlement.
