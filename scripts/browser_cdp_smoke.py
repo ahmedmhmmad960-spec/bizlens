@@ -126,7 +126,8 @@ class Cdp:
 
 
 def find_browser():
-    for _ in range(60):
+    # Hosted runners occasionally need additional startup time for Chrome CDP.
+    for _ in range(120):
         try:
             with urlopen(CHROME + "/json/list", timeout=2) as response:
                 entries = json.load(response)
