@@ -135,3 +135,21 @@ def test_invalid_address_chain_hash_and_log_index_are_rejected():
         transfer(log_index=-1)
     with pytest.raises(ValueError):
         transfer(chain_id=True)
+
+@pytest.mark.parametrize("bad", [
+    "1e8", "9E9999999", "1e-100000000",
+    "1.1234567", "00.10", "1.", "+1.00",
+    "9999999999999999999",  # 19 whole digits
+    "1" * 10000,
+])
+def test_amount_grammar_has_bounded_plain_decimal_notation(bad):
+    with pytest.raises(ValueError):
+        invoice(amount_usdc=bad)
+
+
+def test_large_transfer_integer_and_invoice_ids_are_bounded():
+    with pytest.raises(ValueError, match="bounded"):
+        transfer(amount_raw=10**1000)
+    with pytest.raises(ValueError, match="at most 80"):
+        invoice(invoice_id="A" * 81)
+    assert invoice(amount_usdc="999999999999999999.999999").invoice_id == "INV-0001"
