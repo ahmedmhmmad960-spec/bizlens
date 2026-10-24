@@ -54,15 +54,36 @@ pentest, chain verification, production authorization, or a Base endorsement.
    cryptographic proof, Ethereum L1 finality, invoice paid or funds available.
    `candidate_match` is still weaker: just matching supplied fields.
 4. **P1 — GUI acceptance.** CI exercises Next.js HTTP, not a graphical
-   browser. Test responsive view, operator-key handling, field errors,
-   accessible status announcements, report isolation, printing and keyboard
-   navigation. Codespace preview/auth issue is tracked separately.
+   browser. A [manual browser acceptance plan](v1-browser-acceptance.md)
+   now documents Chrome/mobile/keyboard, stale-request race testing,
+   private operator-key handling and report isolation. **None of those
+   manual interaction checks have yet been signed off.** Codespace
+   preview/auth issue is tracked separately.
 5. **P1 — Independent review.** Separate reviewer must inspect matching
    contract, URI/authorization boundaries, tests, package interface and
    negative cases before owner approves merge; internal review is not enough.
 6. **P1 — Local vs release install.** Verify clean editable installation and
    an isolated wheel; third-party reuse needs documented stable API,
    versioning, licensing and migration expectations.
+
+## Current hardening delta (2026-10-24, PR #24)
+
+- UI clears prior observations if any invoice, network, tokenless RPC
+  reference or operator-key input changes; late asynchronous responses are
+  ignored when input state changed. **Manual race validation remains open.**
+- API success means a request was processed, NOT a paid invoice. Responses
+  now explicitly include `evidence_status` (`rpc_observed` or `unconfirmed`),
+  `invoice_paid=false`, and `settlement_finality_established=false`.
+- The Next.js inspection proxy now rejects non-JSON and requests over
+  2 KiB before proxying to FastAPI. Its HTTP smoke checks both rejection
+  states and ensures public RPC remains disabled.
+- **Residual high-risk limitation:** a transfer event reused in separate
+  API calls has no persisted claim lock/ledger. Batch duplicate detection
+  must never be presented as durable anti-double-payment enforcement.
+  Production reconciliation requires an independently reviewed persistent
+  claim store and replay policy; this is outside the approved V1 scope.
+- This review is **maintainer source review only**; no independent human
+  audit or actual graphical browser proof has been performed.
 
 ## Evidence acceptance checklist (maintain separate from claims)
 
