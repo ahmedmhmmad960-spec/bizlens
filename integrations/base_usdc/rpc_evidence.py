@@ -55,7 +55,18 @@ ObservationStatus = Literal[
 
 
 class RpcUnavailableError(Exception):
-    """The public RPC could not provide usable read-only data."""
+    """Categorized non-sensitive failure; never expose upstream responses."""
+
+    CATEGORIES = frozenset({
+        "rate_limited", "access_denied", "http_error",
+        "network_error", "invalid_response", "rpc_error",
+    })
+
+    def __init__(self, category: str):
+        if category not in self.CATEGORIES:
+            raise ValueError("Invalid sanitized RPC failure category.")
+        self.category = category
+        super().__init__(category)
 
 
 class _NoRedirect(request.HTTPRedirectHandler):
@@ -97,14 +108,26 @@ class BasePublicRpc:
             ) as response:
                 data = response.read(_MAX_RESPONSE + 1)
                 if len(data) > _MAX_RESPONSE:
-                    raise RpcUnavailableError("RPC response exceeds safety limit.")
+                    raise RpcUnavailableError("invalid_response")
                 payload = json.loads(data)
-        except (error.HTTPError, error.URLError, TimeoutError, OSError, ValueError) as exc:
-            raise RpcUnavailableError("Read-only Base RPC request failed.") from exc
+        except error.HTTPError as exc:
+            if exc.code == 429:
+                category = "rate_limited"
+            elif exc.code in (401, 403):
+                category = "access_denied"
+            else:
+                category = "http_error"
+            raise RpcUnavailableError(category) from exc
+        except (error.URLError, TimeoutError, OSError) as exc:
+            raise RpcUnavailableError("network_error") from exc
+        except ValueError as exc:
+            raise RpcUnavailableError("invalid_response") from exc
         if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0":
-            raise RpcUnavailableError("Invalid RPC envelope.")
-        if payload.get("id") != 1 or "error" in payload or "result" not in payload:
-            raise RpcUnavailableError("RPC returned an invalid response or an error.")
+            raise RpcUnavailableError("invalid_response")
+        if payload.get("id") != 1 or "result" not in payload:
+            raise RpcUnavailableError("invalid_response")
+        if "error" in payload:
+            raise RpcUnavailableError("rpc_error")
         return payload["result"]
 
 
@@ -287,6 +310,11 @@ def inspect_invoice(
             "Matching successful L2 receipt and canonical Transfer log observed "
             "via Base RPC; not a cryptographic proof or final settlement.",
             **details,
+        )
+    except RpcUnavailableError as exc:
+        return result(
+            "rpc_unavailable",
+            f"Read-only public RPC unavailable ({exc.category}); no receipt was verified.",
         )
     except (ValueError, TypeError, KeyError):
         return result("invalid_evidence", "Malformed or contradictory chain evidence; no match.")
