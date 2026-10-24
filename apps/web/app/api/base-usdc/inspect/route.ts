@@ -10,7 +10,12 @@ export async function POST(request: Request) {
     const response = await fetch(`${API_URL}/base-usdc/inspect`, {
       method: "POST",
       cache: "no-store",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(request.headers.get("x-bizlens-rpc-key")
+          ? { "X-BizLens-Rpc-Key": request.headers.get("x-bizlens-rpc-key")! }
+          : {}),
+      },
       body: JSON.stringify(payload),
     });
     const result = await response.json();
