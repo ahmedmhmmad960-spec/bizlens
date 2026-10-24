@@ -261,9 +261,8 @@ def inspect_invoice(
                 continue
             if len(topics) != 3:
                 raise ValueError("ERC-20 Transfer event must contain 3 topics.")
-            if item.get("removed") not in (None, False) or type(
-                item.get("removed")
-            ) not in (type(None), bool):
+            removed = item.get("removed")
+            if removed is not None and removed is not False:
                 raise ValueError("Receipt contains malformed or removed transfer log.")
             # Validate both indexed ERC-20 addresses even though only the
             # recipient is compared with the invoice.
