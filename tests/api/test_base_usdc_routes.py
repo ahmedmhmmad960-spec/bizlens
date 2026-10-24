@@ -150,7 +150,6 @@ def test_operator_traffic_is_bounded_per_process(monkeypatch):
         ),
     )
     monkeypatch.setattr(routes, "_MAX_RPC_PER_MINUTE", 2)
-    monkeypatch.setattr(routes.time, "monotonic", lambda: 1000.0)
     try:
         routes._recent_rpc_calls.clear()
         assert client.post("/base-usdc/inspect", json=PAYLOAD, headers=AUTH).status_code == 200
