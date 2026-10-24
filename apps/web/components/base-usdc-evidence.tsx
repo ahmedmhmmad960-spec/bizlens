@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 type MatchResult = {
   invoice_id: string;
@@ -86,6 +86,14 @@ export default function BaseUsdcEvidence() {
   const [txHash, setTxHash] = useState("");
   const [logIndex, setLogIndex] = useState("");
   const [inspectionKey, setInspectionKey] = useState("");
+  // An in-flight response must never describe fields edited after the request.
+  const inspectionVersion = useRef(0);
+
+  function invalidateInspection() {
+    inspectionVersion.current += 1;
+    setInspection(null);
+    setVerifyError(null);
+  }
 
   async function showDemo() {
     if (demoBusy) return;
@@ -108,6 +116,7 @@ export default function BaseUsdcEvidence() {
     setVerifyBusy(true);
     setVerifyError(null);
     setInspection(null);
+    const version = ++inspectionVersion.current;
     try {
       const idx = logIndex.trim() ? Number(logIndex) : null;
       if (idx !== null && (!Number.isSafeInteger(idx) || idx < 0)) {
@@ -129,9 +138,12 @@ export default function BaseUsdcEvidence() {
           log_index: idx,
         }),
       });
-      setInspection(await responseData<VerifyResponse>(response));
+      const finding = await responseData<VerifyResponse>(response);
+      if (inspectionVersion.current === version) setInspection(finding);
     } catch (error) {
-      setVerifyError(error instanceof Error ? error.message : "RPC evidence could not be inspected.");
+      if (inspectionVersion.current === version) {
+        setVerifyError(error instanceof Error ? error.message : "RPC evidence could not be inspected.");
+      }
     } finally {
       setVerifyBusy(false);
     }
@@ -194,37 +206,37 @@ export default function BaseUsdcEvidence() {
         <form className="base-evidence-form" onSubmit={(event) => void verify(event)}>
           <label>Operator inspection access key (not a wallet key)
             <input required minLength={64} maxLength={64} pattern="[0-9a-f]{64}" type="password" autoComplete="off"
-              value={inspectionKey} onChange={(event) => setInspectionKey(event.target.value)}
+              value={inspectionKey} onChange={(event) => { invalidateInspection(); setInspectionKey(event.target.value); }}
               placeholder="Server-configured inspection key" />
           </label>
           <label>Network
-            <select value={chain} onChange={(event) => setChain(Number(event.target.value) as 84532 | 8453)}>
+            <select value={chain} onChange={(event) => { invalidateInspection(); setChain(Number(event.target.value) as 84532 | 8453); }}>
               <option value={84532}>Base Sepolia (testnet)</option>
               <option value={8453}>Base Mainnet</option>
             </select>
           </label>
           <label>Invoice reference
-            <input required maxLength={80} value={invoiceId} onChange={(event) => setInvoiceId(event.target.value)}
+            <input required maxLength={80} value={invoiceId} onChange={(event) => { invalidateInspection(); setInvoiceId(event.target.value); }}
               placeholder="INV-001" />
           </label>
           <label>Recipient (EVM address)
             <input required minLength={42} maxLength={42} spellCheck={false} autoComplete="off"
-              value={recipient} onChange={(event) => setRecipient(event.target.value)}
+              value={recipient} onChange={(event) => { invalidateInspection(); setRecipient(event.target.value); }}
               placeholder="0x… (40 hex characters)" />
           </label>
           <label>Invoice amount (USDC, 6 decimals max)
             <input required maxLength={64} spellCheck={false} inputMode="decimal"
-              value={amount} onChange={(event) => setAmount(event.target.value)}
+              value={amount} onChange={(event) => { invalidateInspection(); setAmount(event.target.value); }}
               placeholder="12.345678" />
           </label>
           <label>Transaction hash
             <input required minLength={66} maxLength={66} spellCheck={false} autoComplete="off"
-              value={txHash} onChange={(event) => setTxHash(event.target.value)}
+              value={txHash} onChange={(event) => { invalidateInspection(); setTxHash(event.target.value); }}
               placeholder="0x… (64 hex characters)" />
           </label>
           <label>Transfer log index (optional)
             <input min={0} step={1} type="number" value={logIndex}
-              onChange={(event) => setLogIndex(event.target.value)}
+              onChange={(event) => { invalidateInspection(); setLogIndex(event.target.value); }}
               placeholder="Use when the transaction contains multiple transfers" />
           </label>
           <button type="submit" className="button primary" disabled={verifyBusy}>
@@ -239,6 +251,9 @@ export default function BaseUsdcEvidence() {
             <p>{inspection.result.explanation}</p>
             <dl className="base-evidence-facts">
               <div><dt>Invoice</dt><dd>{inspection.result.invoice_id}</dd></div>
+              <div><dt>Transaction</dt><dd>{inspection.result.tx_hash ?? "Not observed"}</dd></div>
+              <div><dt>RPC observation</dt><dd>{inspection.result.rpc_observed
+                ? "Matching L2 event reported (not final settlement)" : "Not established"}</dd></div>
               <div><dt>Block</dt><dd>{inspection.result.block_number ?? "Not observed"}</dd></div>
               <div><dt>L2 confirmations</dt><dd>{inspection.result.confirmations ?? "Not observed"}</dd></div>
               <div><dt>Transfer log</dt><dd>{inspection.result.log_index ?? "Not observed"}</dd></div>
