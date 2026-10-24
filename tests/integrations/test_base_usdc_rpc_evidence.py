@@ -4,15 +4,18 @@ Fixtures are entirely synthetic and must never be represented as real tx hashes.
 """
 
 from copy import deepcopy
+from urllib.error import HTTPError, URLError
 from dataclasses import replace
 
 import pytest
 
 from integrations.base_usdc.matcher import USDC_CONTRACTS, Invoice
+from integrations.base_usdc import rpc_evidence as rpc_module
 from integrations.base_usdc.rpc_evidence import (
     BASE_RPC_URLS,
     TRANSFER_TOPIC,
     BasePublicRpc,
+    RpcUnavailableError,
     _NoRedirect,
     inspect_invoice,
     inspect_invoices,
@@ -262,3 +265,101 @@ def test_rpc_redirects_cannot_escape_preselected_base_host():
     assert handler.redirect_request(
         None, None, 302, "Found", {}, "https://example.net/redirect-target"
     ) is None
+
+
+@pytest.mark.parametrize(
+    ("upstream", "expected_category"),
+    [
+        (HTTPError("https://sepolia.base.org", 429, "secret rate token", {}, None),
+         "rate_limited"),
+        (HTTPError("https://sepolia.base.org", 403, "secret vendor data", {}, None),
+         "access_denied"),
+        (HTTPError("https://sepolia.base.org", 500, "secret provider failure", {}, None),
+         "http_error"),
+        (URLError("secret internal hostname"), "network_error"),
+    ],
+)
+def test_transport_classifies_failure_without_exposing_provider_text(
+    monkeypatch, upstream, expected_category,
+):
+    class FakeOpener:
+        def open(self, req, timeout):
+            raise upstream
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener",
+        lambda *handlers: FakeOpener(),
+    )
+    transport = BasePublicRpc(CHAIN)
+    with pytest.raises(RpcUnavailableError) as captured:
+        transport.call("eth_chainId", [])
+    assert captured.value.category == expected_category
+    assert "secret" not in str(captured.value)
+
+    # The public observation remains a failed, unauthenticated claim.
+    observation = inspect_invoice(invoice(), transport)
+    assert observation.status == "rpc_unavailable"
+    assert not observation.rpc_observed
+    assert expected_category in observation.explanation
+    assert "secret" not in observation.explanation
+
+
+@pytest.mark.parametrize(
+    ("rpc_data", "expected_category"),
+    [
+        (b"definitely not JSON", "invalid_response"),
+        (b'{"jsonrpc":"2.0","id":1,"error":{"message":"secret vendor error"}}',
+         "invalid_response"),
+        (b'{"jsonrpc":"2.0","id":1,"result":null}', "invalid_response"),
+    ],
+)
+def test_transport_rejects_malformed_rpc_responses_without_logging_body(
+    monkeypatch, rpc_data, expected_category,
+):
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self, count):
+            return rpc_data
+
+    class FakeOpener:
+        def open(self, req, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener",
+        lambda *handlers: FakeOpener(),
+    )
+    with pytest.raises(RpcUnavailableError) as captured:
+        BasePublicRpc(CHAIN).call("eth_chainId", [])
+    assert captured.value.category == expected_category
+    assert "secret" not in str(captured.value)
+
+
+def test_transport_rejects_valid_rpc_error_envelope_without_exposing_it(monkeypatch):
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self, count):
+            return b'{"jsonrpc":"2.0","id":1,"error":{"message":"secret vendor error"}}'
+
+    class FakeOpener:
+        def open(self, req, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener",
+        lambda *handlers: FakeOpener(),
+    )
+    with pytest.raises(RpcUnavailableError) as captured:
+        BasePublicRpc(CHAIN).call("eth_chainId", [])
+    assert captured.value.category == "invalid_response"
+    assert "secret" not in str(captured.value)
