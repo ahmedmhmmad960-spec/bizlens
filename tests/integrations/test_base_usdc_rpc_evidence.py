@@ -3,6 +3,7 @@
 Fixtures are entirely synthetic and must never be represented as real tx hashes.
 """
 
+import json
 from copy import deepcopy
 from dataclasses import replace
 from urllib.error import HTTPError, URLError
@@ -392,3 +393,107 @@ def test_jsonrpc_null_receipt_is_a_valid_pending_result(monkeypatch):
         lambda *handlers: FakeOpener(),
     )
     assert BasePublicRpc(CHAIN).call("eth_getTransactionReceipt", [TX]) is None
+
+@pytest.mark.parametrize(
+    ("method", "params"),
+    [
+        ("eth_chainId", ["unwanted"]),
+        ("eth_blockNumber", [1]),
+        ("eth_getTransactionReceipt", []),
+        ("eth_getTransactionReceipt", ["0x1234"]),
+        ("eth_getTransactionReceipt", [TX, TX]),
+        ("eth_getBlockByNumber", ["latest", False]),
+        ("eth_getBlockByNumber", ["0x64", True]),
+        ("eth_getBlockByNumber", ["0x64", 0]),
+        ("eth_getBlockByNumber", ["0x" + "f" * 128, False]),
+    ],
+)
+def test_rpc_transport_rejects_unapproved_parameters_before_network(
+    monkeypatch, method, params,
+):
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener",
+        lambda *args: pytest.fail("No network for invalid RPC parameters"),
+    )
+    with pytest.raises(ValueError, match="Invalid parameters"):
+        BasePublicRpc(CHAIN).call(method, params)
+
+
+@pytest.mark.parametrize("timeout", [True, False, float("nan"), float("inf"), -1, 31])
+def test_rpc_timeout_must_be_finite_numeric_value(timeout):
+    with pytest.raises(ValueError, match="finite number"):
+        BasePublicRpc(CHAIN, timeout_seconds=timeout)
+
+
+@pytest.mark.parametrize(
+    "wire_payload",
+    [
+        b'{"jsonrpc":"2.0","id":1,"result":"0x1","result":"0x2"}',
+        b'{"jsonrpc":"2.0","id":1,"result":{"logs":[{"data":"x","data":"y"}]}}',
+        b'{"jsonrpc":"2.0","id":true,"result":"0x1"}',
+        b'{"jsonrpc":"2.0","id":1.0,"result":"0x1"}',
+        b'{"jsonrpc":"2.0","id":1,"result":NaN}',
+        b'{"jsonrpc":"2.0","id":1,"result":Infinity}',
+        b'{"jsonrpc":"2.0","id":1,"result":-Infinity}',
+    ],
+)
+def test_rpc_transport_fails_closed_on_ambiguous_or_nonstandard_json(
+    monkeypatch, wire_payload,
+):
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self, size):
+            return wire_payload
+
+    class FakeOpener:
+        def open(self, request, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener", lambda *args: FakeOpener(),
+    )
+    with pytest.raises(RpcUnavailableError) as captured:
+        BasePublicRpc(CHAIN).call("eth_chainId", [])
+    assert captured.value.category == "invalid_response"
+    assert str(captured.value) == "invalid_response"
+
+
+def test_rpc_transport_still_accepts_canonical_method_parameters(monkeypatch):
+    """Schema hardening must not break legitimate receipt inspection calls."""
+    observations = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self, size):
+            return b'{"jsonrpc":"2.0","id":1,"result":null}'
+
+    class FakeOpener:
+        def open(self, request, timeout):
+            observations.append(json.loads(request.data))
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener", lambda *args: FakeOpener(),
+    )
+    rpc = BasePublicRpc(CHAIN)
+    for name, params in (
+        ("eth_chainId", []),
+        ("eth_getTransactionReceipt", [TX]),
+        ("eth_getBlockByNumber", ["0x64", False]),
+        ("eth_blockNumber", []),
+    ):
+        assert rpc.call(name, params) is None
+    assert [item["method"] for item in observations] == [
+        "eth_chainId", "eth_getTransactionReceipt",
+        "eth_getBlockByNumber", "eth_blockNumber",
+    ]
