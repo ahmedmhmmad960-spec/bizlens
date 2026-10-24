@@ -35,7 +35,7 @@ def base_usdc_demo() -> dict:
     return {"success": True, **offline_demo()}
 
 
-@router.post("/inspect")
+@router.post("/inspect", response_model=None)
 def base_usdc_inspect(payload: InvoiceInspectionRequest) -> dict | JSONResponse:
     """Optional on-demand public receipt observation; never paid status."""
     if os.getenv("BIZLENS_BASE_RPC_ENABLED") != "1":
