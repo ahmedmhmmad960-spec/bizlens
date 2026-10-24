@@ -78,7 +78,11 @@ def base_usdc_inspect(
                 "mode": "disabled",
             },
         )
-    if not hmac.compare_digest(inspection_key or "", configured):
+    if (
+        not inspection_key
+        or not re.fullmatch(r"[0-9a-f]{64}", inspection_key)
+        or not hmac.compare_digest(inspection_key, configured)
+    ):
         return JSONResponse(
             status_code=403,
             headers={"Cache-Control": "no-store"},
