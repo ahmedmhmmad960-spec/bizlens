@@ -261,8 +261,13 @@ def inspect_invoice(
                 continue
             if len(topics) != 3:
                 raise ValueError("ERC-20 Transfer event must contain 3 topics.")
-            if item.get("removed") is True:
-                raise ValueError("Receipt contains a removed transfer log.")
+            if item.get("removed") not in (None, False) or type(
+                item.get("removed")
+            ) not in (type(None), bool):
+                raise ValueError("Receipt contains malformed or removed transfer log.")
+            # Validate both indexed ERC-20 addresses even though only the
+            # recipient is compared with the invoice.
+            _topic_address(topics[1])
             if _hash(item.get("transactionHash")) != _hash(invoice.tx_hash):
                 raise ValueError("Transfer transaction hash does not match receipt.")
             if _word(item.get("blockHash")) != block_hash:
