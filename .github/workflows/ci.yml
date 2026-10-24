@@ -55,6 +55,8 @@ jobs:
             --expected tests/fixtures/golden/profit_reversal.expected.json
           python -m bizlens_toolkit usdc-demo
           python -m examples.developer_toolkit.quickstart
+          # Real explorer reference is pinned; CI does not make live chain calls.
+          python -m examples.developer_toolkit.base_sepolia_reference
 
   frontend:
     name: Frontend checks
