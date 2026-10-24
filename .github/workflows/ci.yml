@@ -69,6 +69,7 @@ jobs:
       # Force the deterministic rule-based provider. Never spend AI tokens in CI.
       OPENAI_API_KEY: ""
       BIZLENS_AI_MODEL: ""
+      BIZLENS_BASE_RPC_ENABLED: ""
       BIZLENS_API_URL: http://127.0.0.1:8000
       BIZLENS_WEB_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"
