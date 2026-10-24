@@ -150,6 +150,133 @@ def screenshot(browser, name):
         handle.write(base64.b64decode(output["data"]))
 
 
+
+def set_form_input(browser, label, value):
+    """Change a controlled React input as a browser DOM input event."""
+    expression = (
+        "(() => {"
+        "const label = [...document.querySelectorAll('.base-evidence-form label')]"
+        f".find(n => n.textContent.trim().startsWith({json.dumps(label)}));"
+        "if (!label) throw new Error('Missing inspector field');"
+        "const input = label.querySelector('input');"
+        "if (!input) throw new Error('Missing inspector input');"
+        "const setter = Object.getOwnPropertyDescriptor("
+        "HTMLInputElement.prototype, 'value').set;"
+        f"setter.call(input, {json.dumps(value)});"
+        "input.dispatchEvent(new Event('input', {bubbles:true}));"
+        "return input.value;"
+        "})()"
+    )
+    actual = browser.js(expression)
+    assert actual == value, (label, actual)
+
+
+def test_late_inspection_response(browser):
+    """A real hydrated React form must discard outdated simulated RPC replies.
+
+    All /api/base-usdc/inspect fetches are intercepted *in this page*.
+    No RPC, private operator token or payment action ever leaves Chrome.
+    """
+    installed = browser.js(
+        "(() => {"
+        "const originalFetch = window.fetch.bind(window);"
+        "window.__bizlensRace = {calls:[], restore:()=>window.fetch=originalFetch};"
+        "window.fetch = (input, options) => {"
+        "const path = typeof input==='string' ? input : input.url;"
+        "if (path!=='/api/base-usdc/inspect') return originalFetch(input,options);"
+        "return new Promise((resolve,reject) => {"
+        "window.__bizlensRace.calls.push({"
+        "resolve,reject,payload:JSON.parse(options.body)"
+        "});"
+        "});"
+        "}; return true;"
+        "})()"
+    )
+    assert installed is True
+    try:
+        set_form_input(browser, "Operator inspection access key", "f" * 64)
+        set_form_input(browser, "Invoice reference", "SYNTH-RACE-OLD")
+        set_form_input(browser, "Recipient (EVM address)", "0x" + "a" * 40)
+        set_form_input(browser, "Invoice amount", "12.345678")
+        set_form_input(browser, "Transaction hash", "0x" + "b" * 64)
+        set_form_input(browser, "Transfer log index", "1")
+        browser.wait(
+            "!!document.querySelector('.base-evidence-form button[type=submit]')",
+            label="inspector form rendered",
+        )
+        browser.js("document.querySelector('.base-evidence-form button[type=submit]').click()")
+        browser.wait(
+            "window.__bizlensRace.calls.length === 1",
+            label="intercepted pending inspection", timeout=10,
+        )
+        payload = browser.js("window.__bizlensRace.calls[0].payload")
+        assert payload["invoice_id"] == "SYNTH-RACE-OLD", payload
+        assert payload["chain_id"] == 84532
+        assert payload["log_index"] == 1
+        # The user edits a field before the old "positive" mock resolves.
+        set_form_input(browser, "Invoice reference", "SYNTH-RACE-NEW")
+        browser.js(
+            "window.__bizlensRace.calls[0].resolve("
+            "new Response(JSON.stringify({"
+            "success:true,mode:'read_only_rpc',network:'Base Sepolia',"
+            "evidence_status:'rpc_observed',invoice_paid:false,"
+            "settlement_finality_established:false,warning:'Mock only',"
+            "result:{invoice_id:'SYNTH-RACE-OLD',status:'rpc_observed_match',"
+            "explanation:'SYNTHETIC DELAYED MATCH, NOT REAL',"
+            "chain_id:84532,tx_hash:'0x'+'b'.repeat(64),"
+            "block_number:100,confirmations:6,log_index:1,rpc_observed:true}"
+            "}),{status:200,headers:{'Content-Type':'application/json'}}))"
+        )
+        browser.wait(
+            "!document.querySelector('.base-evidence-form button[type=submit]').disabled",
+            label="outdated response processed", timeout=10,
+        )
+        assert browser.js(
+            "document.querySelector('.base-evidence-output[role=status]')===null"
+        ), "Stale positive RPC observation became visible after invoice edit"
+        assert browser.js("document.querySelector('.base-evidence-error')===null")
+        print(
+            "BROWSER PASS: delayed simulated positive receipt cannot attach to edited invoice",
+            flush=True,
+        )
+
+        # A *current* negative mock must render as unconfirmed, not paid.
+        browser.js("document.querySelector('.base-evidence-form button[type=submit]').click()")
+        browser.wait("window.__bizlensRace.calls.length === 2", label="new inspection")
+        assert browser.js(
+            "window.__bizlensRace.calls[1].payload.invoice_id"
+        ) == "SYNTH-RACE-NEW"
+        browser.js(
+            "window.__bizlensRace.calls[1].resolve("
+            "new Response(JSON.stringify({"
+            "success:true,mode:'read_only_rpc',network:'Base Sepolia',"
+            "evidence_status:'unconfirmed',invoice_paid:false,"
+            "settlement_finality_established:false,warning:'No final settlement',"
+            "result:{invoice_id:'SYNTH-RACE-NEW',status:'rpc_unavailable',"
+            "explanation:'Offline simulated network error',"
+            "chain_id:84532,tx_hash:null,block_number:null,"
+            "confirmations:null,log_index:null,rpc_observed:false}"
+            "}),{status:200,headers:{'Content-Type':'application/json'}}))"
+        )
+        browser.wait(
+            "!!document.querySelector('.base-evidence-output[role=status]')",
+            label="current unconfirmed status",
+        )
+        output = browser.js(
+            "document.querySelector('.base-evidence-output[role=status]').innerText"
+        )
+        assert "Evidence is unconfirmed" in output, output
+        assert "Not established" in output, output
+        set_form_input(browser, "Invoice amount", "12.345679")
+        browser.wait(
+            "document.querySelector('.base-evidence-output[role=status]')===null",
+            label="previous observation cleared after amount change",
+        )
+        print("BROWSER PASS: unconfirmed evidence clears on input change", flush=True)
+    finally:
+        assert browser.js("window.__bizlensRace.restore()") is None
+
+
 def main():
     browser = Cdp(find_browser())
     try:
@@ -205,6 +332,7 @@ def main():
         assert metrics["heading"] and metrics["scrollWidth"] <= metrics["innerWidth"] + 2, metrics
         print("BROWSER PASS: 390px mobile view and no horizontal overflow", flush=True)
         screenshot(browser, "base-mobile.png")
+        test_late_inspection_response(browser)
     finally:
         browser.sock.close()
 
