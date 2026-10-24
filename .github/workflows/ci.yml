@@ -172,3 +172,9 @@ jobs:
           tail -n 100 "$RUNNER_TEMP/bizlens-api.log" || true
           echo "=== Web server ==="
           tail -n 100 "$RUNNER_TEMP/bizlens-web.log" || true
+          echo "=== Local-only Chrome startup diagnostics ==="
+          tail -n 120 "$RUNNER_TEMP/bizlens-chrome.log" || true
+          echo "=== Chrome process ==="
+          if [ -f "$RUNNER_TEMP/bizlens-chrome.pid" ]; then
+            ps -p "$(cat "$RUNNER_TEMP/bizlens-chrome.pid")" -o pid,stat,comm || true
+          fi
