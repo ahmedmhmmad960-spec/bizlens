@@ -35,7 +35,8 @@ async function boundedJson(request: Request): Promise<unknown> {
 }
 
 export async function POST(request: Request) {
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+  const mediaType = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
     return reject(415, "The inspection request must be JSON.");
   }
   const declaredSize = request.headers.get("content-length");
