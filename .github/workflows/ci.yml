@@ -135,6 +135,36 @@ jobs:
       - name: Verify Next.js-to-FastAPI HTTP journey
         run: python scripts/demo_http_smoke.py
 
+      - name: Launch preinstalled headless Chrome (local-only)
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No preinstalled Chrome binary available; browser gate remains open."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/bizlens-browser"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --remote-debugging-address=127.0.0.1 --remote-debugging-port=9223 \
+            --user-data-dir="$RUNNER_TEMP/bizlens-chrome-profile" \
+            --window-size=1440,900 about:blank \
+            > "$RUNNER_TEMP/bizlens-chrome.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/bizlens-chrome.pid"
+
+      - name: Verify real Chrome click-through and mobile layout
+        timeout-minutes: 3
+        env:
+          BIZLENS_BROWSER_SCREENSHOT_DIR: ${{ runner.temp }}/bizlens-browser
+        run: python scripts/browser_cdp_smoke.py
+
+      - name: Attach synthetic-only browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bizlens-browser-${{ github.run_id }}
+          path: ${{ runner.temp }}/bizlens-browser/*.png
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Include server logs on error
         if: failure()
         run: |
