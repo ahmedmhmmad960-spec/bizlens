@@ -76,9 +76,12 @@ pentest, chain verification, production authorization, or a Base endorsement.
 - API success means a request was processed, NOT a paid invoice. Responses
   now explicitly include `evidence_status` (`rpc_observed` or `unconfirmed`),
   `invoice_paid=false`, and `settlement_finality_established=false`.
-- The Next.js inspection proxy now rejects non-JSON and requests over
-  2 KiB before proxying to FastAPI. Its HTTP smoke checks both rejection
-  states and ensures public RPC remains disabled.
+- **Two independently enforced 2 KiB ingress caps:** the Next.js proxy
+  rejects oversized requests before forwarding, and the direct FastAPI
+  inspection route now has a bounded ASGI stream guard that rejects even
+  chunked/incorrect-length bodies before JSON validation or RPC access.
+  Regression tests verify a forged short Content-Length cannot bypass it.
+  Production ingress controls and a shared global gateway are still required.
 - **Residual high-risk limitation:** a transfer event reused in separate
   API calls has no persisted claim lock/ledger. Batch duplicate detection
   must never be presented as durable anti-double-payment enforcement.
