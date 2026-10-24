@@ -15,10 +15,21 @@ mobile viewport with no horizontal overflow. The run published [desktop
 and mobile Chrome screenshots](https://github.com/ahmedmhmmad960-spec/bizlens/actions/runs/40102231428/artifacts/12563058341)
 with a 3-day retention, showing synthetic sample data and no secrets.
 
+**New automated gate (2026-10-24):** the Chrome suite additionally
+compares complete report content **before and after** visiting the Base
+panel and rerunning synthetic samples. On a 390px viewport it verifies
+the closed sidebar is inert and keyboard-focusable controls cannot leak
+into the offscreen drawer. It also tests opening via an actual click,
+moving focus into the drawer, then dispatching **Escape** and verifying
+focus returns to the menu button and background input resumes. Real
+Chrome CI proves these behaviors; **Enter-to-open was NOT established
+by the CDP test** and remains part of manual keyboard QA.
+
 **Scope boundary:** a headless Chrome smoke is not a human visual review,
 full keyboard/screen-reader test, Safari/Firefox compatibility evaluation,
-live-RPC inspection, or asynchronous race-condition test. Those manual
-checks remain open. Keep PR #24 draft until reviewer/owner approval.
+live-RPC inspection, or a real network-race test. The synthetic delayed
+response test is a separate controlled Chrome check. Manual and owner
+sign-offs remain open; keep PR #24 draft.
 
 ## Test environment boundaries
 
@@ -73,7 +84,9 @@ checks remain open. Keep PR #24 draft until reviewer/owner approval.
 - Headless Chrome UI smoke `scripts/browser_cdp_smoke.py` uses only the Python
   standard library and the already-installed GitHub runner Chrome. It makes
   real DOM click interactions, validates rendered USDC sample states and tests
-  a 390px mobile viewport. The stable run is linked above.
+  a 390px mobile viewport. Later CI adds report-isolation and
+  drawer focus/Escape behavior at 390px; it does NOT certify all
+  keyboard interactions.
 - An unverified or inaccessible RPC returns `evidence_status=unconfirmed`,
   `invoice_paid=false`, `settlement_finality_established=false`. Successful
   HTTP transport does not imply payment settlement.
