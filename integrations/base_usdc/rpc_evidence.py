@@ -53,6 +53,10 @@ ObservationStatus = Literal[
 ]
 
 
+class RpcUnavailableError(Exception):
+    """The public RPC could not provide usable read-only data."""
+
+
 class RpcTransport(Protocol):
     def call(self, method: str, params: list[object]) -> object: ...
 
@@ -83,14 +87,14 @@ class BasePublicRpc:
             with request.urlopen(req, timeout=self.timeout) as response:
                 data = response.read(_MAX_RESPONSE + 1)
                 if len(data) > _MAX_RESPONSE:
-                    raise ValueError("RPC response exceeds safety limit.")
+                    raise RpcUnavailableError("RPC response exceeds safety limit.")
                 payload = json.loads(data)
         except (error.HTTPError, error.URLError, TimeoutError, OSError, ValueError) as exc:
-            raise ValueError("Read-only Base RPC request failed.") from exc
+            raise RpcUnavailableError("Read-only Base RPC request failed.") from exc
         if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0":
-            raise ValueError("Invalid RPC envelope.")
+            raise RpcUnavailableError("Invalid RPC envelope.")
         if payload.get("id") != 1 or "error" in payload or "result" not in payload:
-            raise ValueError("RPC returned an invalid response or an error.")
+            raise RpcUnavailableError("RPC returned an invalid response or an error.")
         return payload["result"]
 
 
@@ -274,8 +278,8 @@ def inspect_invoice(
             "via Base RPC; not a cryptographic proof or final settlement.",
             **details,
         )
-    except (ValueError, TypeError, KeyError) as exc:
-        return result("invalid_evidence", f"RPC evidence was invalid: {exc}")
-    except Exception:
+    except (ValueError, TypeError, KeyError):
+        return result("invalid_evidence", "Malformed or contradictory chain evidence; no match.")
+    except (RpcUnavailableError, Exception):
         # Hide transport errors and never display secrets or endpoint responses.
         return result("rpc_unavailable", "Read-only RPC unavailable; nothing was verified.")
