@@ -4,13 +4,13 @@ Fixtures are entirely synthetic and must never be represented as real tx hashes.
 """
 
 from copy import deepcopy
-from urllib.error import HTTPError, URLError
 from dataclasses import replace
+from urllib.error import HTTPError, URLError
 
 import pytest
 
-from integrations.base_usdc.matcher import USDC_CONTRACTS, Invoice
 from integrations.base_usdc import rpc_evidence as rpc_module
+from integrations.base_usdc.matcher import USDC_CONTRACTS, Invoice
 from integrations.base_usdc.rpc_evidence import (
     BASE_RPC_URLS,
     TRANSFER_TOPIC,
