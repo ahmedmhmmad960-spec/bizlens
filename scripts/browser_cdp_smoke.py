@@ -320,7 +320,7 @@ def test_mobile_keyboard_navigation(browser):
         label="Escape closes nav and restores trigger focus",
     )
     assert browser.js("document.querySelector('.workspace-main').inert === false")
-    print("BROWSER PASS: mobile drawer keyboard focus/Enter/Escape/inert", flush=True)
+    print("BROWSER PASS: mobile drawer focusable/Escape/restored focus/inert", flush=True)
 
 
 def test_report_isolation(browser):
