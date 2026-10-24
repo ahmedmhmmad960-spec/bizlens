@@ -6,6 +6,7 @@ The only outgoing calls are allowlisted Ethereum read methods over HTTPS.
 """
 
 import json
+import math
 import re
 from dataclasses import dataclass, replace
 from typing import Literal, Protocol
@@ -80,20 +81,61 @@ class RpcTransport(Protocol):
     def call(self, method: str, params: list[object]) -> object: ...
 
 
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Never silently accept contradictory duplicate fields in RPC evidence."""
+    parsed: dict[str, object] = {}
+    for key, value in pairs:
+        if key in parsed:
+            raise ValueError("Duplicate JSON-RPC response field.")
+        parsed[key] = value
+    return parsed
+
+
+def _reject_json_constant(value: str) -> None:
+    """Nonstandard NaN/Infinity must never appear in monetary chain evidence."""
+    raise ValueError("Non-finite JSON-RPC value.")
+
+
 class BasePublicRpc:
     """Read-only allowlisted transport. Never accepts an arbitrary RPC URL."""
 
     def __init__(self, chain_id: int, timeout_seconds: float = 8.0):
         if type(chain_id) is not int or chain_id not in BASE_RPC_URLS:
             raise ValueError("Unsupported Base chain ID.")
-        if not 0 < timeout_seconds <= 30:
-            raise ValueError("RPC timeout must be between 0 and 30 seconds.")
+        if (
+            type(timeout_seconds) not in (int, float)
+            or not math.isfinite(timeout_seconds)
+            or not 0 < timeout_seconds <= 30
+        ):
+            raise ValueError("RPC timeout must be a finite number between 0 and 30 seconds.")
         self.endpoint = BASE_RPC_URLS[chain_id]
         self.timeout = timeout_seconds
 
     def call(self, method: str, params: list[object]) -> object:
         if method not in _ALLOWED_METHODS:
             raise ValueError("Only approved read-only RPC methods are permitted.")
+        # This is a minimal receipt-inspection transport, not a generic
+        # arbitrary-param JSON-RPC proxy. Fail before opening a network socket.
+        if method in ("eth_chainId", "eth_blockNumber"):
+            valid_params = params == []
+        elif method == "eth_getTransactionReceipt":
+            valid_params = (
+                isinstance(params, list)
+                and len(params) == 1
+                and isinstance(params[0], str)
+                and _HEX_WORD.fullmatch(params[0]) is not None
+            )
+        else:
+            valid_params = (
+                isinstance(params, list)
+                and len(params) == 2
+                and isinstance(params[0], str)
+                and len(params[0]) <= 18
+                and _HEX_QUANTITY.fullmatch(params[0]) is not None
+                and params[1] is False
+            )
+        if not valid_params:
+            raise ValueError("Invalid parameters for approved read-only RPC method.")
         body = json.dumps({
             "jsonrpc": "2.0", "method": method, "params": params, "id": 1,
         }).encode("utf-8")
@@ -109,7 +151,11 @@ class BasePublicRpc:
                 data = response.read(_MAX_RESPONSE + 1)
                 if len(data) > _MAX_RESPONSE:
                     raise RpcUnavailableError("invalid_response")
-                payload = json.loads(data)
+                payload = json.loads(
+                    data,
+                    object_pairs_hook=_unique_json_object,
+                    parse_constant=_reject_json_constant,
+                )
         except error.HTTPError as exc:
             if exc.code == 429:
                 category = "rate_limited"
@@ -124,7 +170,7 @@ class BasePublicRpc:
             raise RpcUnavailableError("invalid_response") from exc
         if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0":
             raise RpcUnavailableError("invalid_response")
-        if payload.get("id") != 1:
+        if type(payload.get("id")) is not int or payload["id"] != 1:
             raise RpcUnavailableError("invalid_response")
         if "error" in payload:
             raise RpcUnavailableError("rpc_error")
