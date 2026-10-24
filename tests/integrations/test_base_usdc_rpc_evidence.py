@@ -14,6 +14,7 @@ from integrations.base_usdc.rpc_evidence import (
     TRANSFER_TOPIC,
     BasePublicRpc,
     inspect_invoice,
+    inspect_invoices,
 )
 
 TX = "0x" + "1" * 64
@@ -230,3 +231,26 @@ def test_allowlisted_public_endpoints_only():
         transport.call("eth_sendRawTransaction", ["0xDEAD"])
     with pytest.raises(ValueError):
         BasePublicRpc(CHAIN, timeout_seconds=0)
+
+
+def test_batch_duplicate_claims_reject_both_even_after_valid_receipts():
+    same_event = inspect_invoices([
+        invoice(invoice_id="INV-A"), invoice(invoice_id="INV-B"),
+    ], FakeRpc())
+    assert [r.status for r in same_event] == ["duplicate_claim", "duplicate_claim"]
+    assert all(not r.rpc_observed for r in same_event)
+
+
+def test_batch_distinct_events_do_not_block_each_other():
+    data = responses()
+    data["eth_getTransactionReceipt"]["logs"] = [log(), log(logIndex="0x3")]
+    results = inspect_invoices([
+        invoice(invoice_id="INV-A"),
+        invoice(invoice_id="INV-B", log_index=3),
+    ], FakeRpc(data))
+    assert [r.status for r in results] == ["rpc_observed_match", "rpc_observed_match"]
+
+
+def test_public_rpc_batch_size_is_bounded():
+    with pytest.raises(ValueError, match="At most 20"):
+        inspect_invoices([invoice()] * 21, FakeRpc())
