@@ -43,6 +43,7 @@ later untested commit.
 | Supplied transfer record into offline matcher | `integrations/base_usdc/matcher.py` | Wrong chain/token/address, duplicated log claims, amount decimals |
 | Internet JSON-RPC into receipt observation | `integrations/base_usdc/rpc_evidence.py` | Forged receipts, noncanonical blocks, malformed logs, duplicate keys, unusual JSON, redirects, method/parameter allowlists |
 | Unauthenticated browser into Next proxy | `apps/web/app/api/base-usdc/inspect/route.ts` | 2 KiB cap, streaming bodies, exact MIME, header forwarding and no payment actions |
+| Direct or proxied request into FastAPI | `apps/api/app/base_usdc_ingress.py`, `apps/api/app/main.py` | Independent 2 KiB stream/declared-length cap; forged length, chunked body, 413 before RPC | 
 | Private demo operator key into FastAPI | `apps/api/app/base_usdc_routes.py` | Disabled-by-default, auth mismatch, timing-safe comparison, 429/503, cross-worker limits |
 | React form into displayed evidence | `apps/web/components/base-usdc-evidence.tsx`, `scripts/browser_cdp_smoke.py` | Stale/misassociated async replies, synthetic labels, missing evidence, private key handling |
 | Reusable developer distribution | `bizlens_toolkit/`, `pyproject.toml`, `tests/toolkit/` | Wheel install isolation, public API clarity, no paid provider fallback |
