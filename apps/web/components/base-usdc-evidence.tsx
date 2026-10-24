@@ -33,6 +33,9 @@ type VerifyResponse = {
   success: true;
   mode: string;
   network: string;
+  evidence_status: "rpc_observed" | "unconfirmed";
+  invoice_paid: false;
+  settlement_finality_established: false;
   warning: string;
   result: ReceiptObservation;
 };
@@ -249,6 +252,11 @@ export default function BaseUsdcEvidence() {
             <span className="category">Receipt observation · {inspection.network}</span>
             <h3>{statusLabel(inspection.result.status)}</h3>
             <p>{inspection.result.explanation}</p>
+            <p className="base-evidence-warning">
+              {inspection.evidence_status === "rpc_observed"
+                ? "Base L2 RPC observation only. No invoice settlement is established."
+                : "Evidence is unconfirmed. No payment is established."}
+            </p>
             <dl className="base-evidence-facts">
               <div><dt>Invoice</dt><dd>{inspection.result.invoice_id}</dd></div>
               <div><dt>Transaction</dt><dd>{inspection.result.tx_hash ?? "Not observed"}</dd></div>
