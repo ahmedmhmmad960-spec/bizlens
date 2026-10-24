@@ -160,3 +160,17 @@ def test_operator_traffic_is_bounded_per_process(monkeypatch):
         assert third.json()["success"] is False
     finally:
         routes._recent_rpc_calls.clear()
+
+def test_non_ascii_operator_header_is_rejected_without_internal_error(monkeypatch):
+    monkeypatch.setenv("BIZLENS_BASE_RPC_ENABLED", "1")
+    monkeypatch.setenv("BIZLENS_BASE_RPC_TOKEN", TEST_RPC_TOKEN)
+    monkeypatch.setattr(
+        routes, "BasePublicRpc",
+        lambda chain: (_ for _ in ()).throw(AssertionError("unexpected network")),
+    )
+    invalid = routes.base_usdc_inspect(
+        routes.InvoiceInspectionRequest(**PAYLOAD),
+        inspection_key="é" * 64,
+    )
+    assert invalid.status_code == 403
+    assert TEST_RPC_TOKEN not in invalid.body.decode("utf-8")
