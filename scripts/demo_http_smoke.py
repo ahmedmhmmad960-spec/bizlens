@@ -180,6 +180,18 @@ def main() -> None:
     check(json.loads(base_raw).get("mode") == "disabled", "RPC disable reason missing")
     print("PASS: disabled live Base RPC cannot fabricate settlement in default CI")
 
+    # The Next.js proxy must reject oversized or mislabeled input BEFORE FastAPI/RPC.
+    oversized = json.dumps({**inspect_payload, "invoice_id": "X" * 2500}).encode()
+    big_status, big_raw = request("/api/base-usdc/inspect", oversized, "application/json")
+    check(big_status == 413, "Inspector must reject oversized input at Next.js boundary")
+    check(json.loads(big_raw)["success"] is False, "Oversized request accepted")
+    content_status, content_raw = request(
+        "/api/base-usdc/inspect", b"not-json", "text/plain",
+    )
+    check(content_status == 415, "Inspector must reject non-JSON requests at web boundary")
+    check(json.loads(content_raw)["success"] is False, "Non-JSON request accepted")
+    print("PASS: Next.js Base inspector rejects large/non-JSON payloads before RPC")
+
     print("DEMO_HTTP_JOURNEY: PASS")
 
 
