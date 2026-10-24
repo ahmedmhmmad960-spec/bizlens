@@ -7,7 +7,7 @@ The only outgoing calls are allowlisted Ethereum read methods over HTTPS.
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal, Protocol
 from urllib import error, request
 
@@ -36,6 +36,7 @@ _ALLOWED_METHODS = frozenset({
 
 ObservationStatus = Literal[
     "rpc_observed_match",
+    "duplicate_claim",
     "missing_reference",
     "pending_or_missing",
     "failed_transaction",
@@ -283,3 +284,41 @@ def inspect_invoice(
     except Exception:
         # Hide transport errors and never display secrets or endpoint responses.
         return result("rpc_unavailable", "Read-only RPC unavailable; nothing was verified.")
+
+
+def inspect_invoices(
+    invoices: list[Invoice],
+    rpc: RpcTransport,
+    *,
+    min_confirmations: int = 6,
+) -> list[ReceiptObservation]:
+    """Reject reuse of one observed event across multiple invoice claims."""
+    if len(invoices) > 20:
+        raise ValueError("At most 20 invoices can be inspected in one batch.")
+    results = [
+        inspect_invoice(invoice, rpc, min_confirmations=min_confirmations)
+        for invoice in invoices
+    ]
+    claims: dict[tuple[int, str, int], list[int]] = {}
+    for index, observation in enumerate(results):
+        if (
+            not observation.rpc_observed
+            or observation.tx_hash is None
+            or observation.log_index is None
+        ):
+            continue
+        claim = (
+            observation.chain_id, observation.tx_hash.lower(),
+            observation.log_index,
+        )
+        claims.setdefault(claim, []).append(index)
+    for indices in claims.values():
+        if len(indices) > 1:
+            for index in indices:
+                results[index] = replace(
+                    results[index],
+                    status="duplicate_claim",
+                    explanation="One observed transfer log is referenced by multiple invoices.",
+                    rpc_observed=False,
+                )
+    return results
