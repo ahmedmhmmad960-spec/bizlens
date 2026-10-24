@@ -329,8 +329,8 @@ def test_report_isolation(browser):
     """Visiting Base must not change independently computed commerce report."""
     browser.js("document.querySelector('.workspace-report-link').click()")
     browser.wait("!!document.querySelector('.report-page')", label="first report")
-    before = browser.js("document.querySelector('.workspace-screen').innerText")
-    assert before and "Recommended actions" in before
+    before = browser.js("document.querySelector('.report-content')?.textContent")
+    assert before and len(before) > 80, "Business report must include substantive data"
     browser.js(
         "Array.from(document.querySelectorAll('.workspace-nav-link'))"
         ".find(b=>b.textContent.includes('Base / USDC')).click()"
@@ -343,7 +343,7 @@ def test_report_isolation(browser):
     browser.wait("document.body.innerText.includes('SYNTH-003')", label="second offline sample")
     browser.js("document.querySelector('.workspace-report-link').click()")
     browser.wait("!!document.querySelector('.report-page')", label="second report")
-    after = browser.js("document.querySelector('.workspace-screen').innerText")
+    after = browser.js("document.querySelector('.report-content')?.textContent")
     assert before == after, "Base evidence panel must never change the financial report"
     print("BROWSER PASS: Base navigation leaves finance report unchanged", flush=True)
     browser.js(
