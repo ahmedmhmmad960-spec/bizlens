@@ -124,10 +124,12 @@ class BasePublicRpc:
             raise RpcUnavailableError("invalid_response") from exc
         if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0":
             raise RpcUnavailableError("invalid_response")
-        if payload.get("id") != 1 or "result" not in payload:
+        if payload.get("id") != 1:
             raise RpcUnavailableError("invalid_response")
         if "error" in payload:
             raise RpcUnavailableError("rpc_error")
+        if "result" not in payload:
+            raise RpcUnavailableError("invalid_response")
         return payload["result"]
 
 
