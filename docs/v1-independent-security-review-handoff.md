@@ -83,10 +83,12 @@ later untested commit.
   batches. No persistent ledger prevents claiming the same transfer in
   separate independent API requests. This is evidence inspection, NOT
   a merchant payment-settlement/reconciliation product.
-- **Global rate limiting and ingress:** A 2 KiB cap in the Next route does
-  not cover all direct FastAPI ingress paths or multiple server processes.
-  Production use needs gateway-level auth, body limits, rate controls,
-  logging policy and independent assessment.
+- **Global rate limiting and ingress:** Next.js and the direct FastAPI
+  inspection route now each reject payloads over 2 KiB, including chunked
+  bodies at FastAPI, but these application checks do **not** protect all
+  ingress paths, other upload endpoints or multi-process deployments.
+  Production use still needs shared gateway-level auth, body limits,
+  rate controls, logging policy and independent assessment.
 - **RPC trust/finality:** One public RPC provider is not independent
   cryptographic chain verification or Ethereum L1 finality.
   Prior live Base Sepolia inspection returned `rpc_unavailable`; no real
