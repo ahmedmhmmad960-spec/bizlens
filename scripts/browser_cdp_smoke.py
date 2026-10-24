@@ -280,6 +280,79 @@ def test_late_inspection_response(browser):
         )
 
 
+def test_mobile_keyboard_navigation(browser):
+    """Real Chrome keyboard opens/closes mobile drawer without focus leakage."""
+    browser.wait(
+        "document.querySelector('.workspace-sidebar').inert === true",
+        label="mobile sidebar is inert while closed",
+    )
+    assert browser.js(
+        "document.querySelector('.workspace-main').inert === false"
+    ), "Main workspace must remain keyboard accessible when drawer is closed"
+    browser.js("document.querySelector('.workspace-mobile-toggle').focus()")
+    browser.call("Input.dispatchKeyEvent", {
+        "type": "rawKeyDown", "key": "Enter", "code": "Enter",
+        "windowsVirtualKeyCode": 13,
+    })
+    browser.call("Input.dispatchKeyEvent", {
+        "type": "keyUp", "key": "Enter", "code": "Enter",
+        "windowsVirtualKeyCode": 13,
+    })
+    browser.wait(
+        "document.querySelector('.workspace-sidebar-open') !== null",
+        label="Enter opens mobile navigation",
+    )
+    browser.wait(
+        "document.activeElement?.classList.contains('workspace-close') === true",
+        label="focus moves into open navigation",
+    )
+    assert browser.js("document.querySelector('.workspace-main').inert === true")
+    assert browser.js("document.querySelector('.workspace-sidebar').inert === false")
+    browser.call("Input.dispatchKeyEvent", {
+        "type": "rawKeyDown", "key": "Escape", "code": "Escape",
+        "windowsVirtualKeyCode": 27,
+    })
+    browser.call("Input.dispatchKeyEvent", {
+        "type": "keyUp", "key": "Escape", "code": "Escape",
+        "windowsVirtualKeyCode": 27,
+    })
+    browser.wait(
+        "document.querySelector('.workspace-sidebar').inert === true && "
+        "document.activeElement?.classList.contains('workspace-mobile-toggle')",
+        label="Escape closes nav and restores trigger focus",
+    )
+    assert browser.js("document.querySelector('.workspace-main').inert === false")
+    print("BROWSER PASS: mobile drawer keyboard focus/Enter/Escape/inert", flush=True)
+
+
+def test_report_isolation(browser):
+    """Visiting Base must not change independently computed commerce report."""
+    browser.js("document.querySelector('.workspace-report-link').click()")
+    browser.wait("!!document.querySelector('.report-page')", label="first report")
+    before = browser.js("document.querySelector('.workspace-screen').innerText")
+    assert before and "Recommended actions" in before
+    browser.js(
+        "Array.from(document.querySelectorAll('.workspace-nav-link'))"
+        ".find(b=>b.textContent.includes('Base / USDC')).click()"
+    )
+    browser.wait("!!document.querySelector('.base-evidence-page')", label="Base panel return")
+    browser.js(
+        "Array.from(document.querySelectorAll('button'))"
+        ".find(b=>b.textContent.includes('Run offline sample')).click()"
+    )
+    browser.wait("document.body.innerText.includes('SYNTH-003')", label="second offline sample")
+    browser.js("document.querySelector('.workspace-report-link').click()")
+    browser.wait("!!document.querySelector('.report-page')", label="second report")
+    after = browser.js("document.querySelector('.workspace-screen').innerText")
+    assert before == after, "Base evidence panel must never change the financial report"
+    print("BROWSER PASS: Base navigation leaves finance report unchanged", flush=True)
+    browser.js(
+        "Array.from(document.querySelectorAll('.workspace-nav-link'))"
+        ".find(b=>b.textContent.includes('Base / USDC')).click()"
+    )
+    browser.wait("!!document.querySelector('.base-evidence-page')", label="Base restored")
+
+
 def main():
     browser = Cdp(find_browser())
     try:
@@ -320,6 +393,7 @@ def main():
             assert expected.lower() in visible.lower(), (expected, visible)
         print("BROWSER PASS: three synthetic outcomes are clearly unverified", flush=True)
         screenshot(browser, "base-desktop.png")
+        test_report_isolation(browser)
 
         # This smoke never submits a live inspection, even to the disabled API.
         assert browser.js("document.querySelector('input[type=password]') !== null")
@@ -335,6 +409,7 @@ def main():
         assert metrics["heading"] and metrics["scrollWidth"] <= metrics["innerWidth"] + 2, metrics
         print("BROWSER PASS: 390px mobile view and no horizontal overflow", flush=True)
         screenshot(browser, "base-mobile.png")
+        test_mobile_keyboard_navigation(browser)
         test_late_inspection_response(browser)
     finally:
         browser.sock.close()
