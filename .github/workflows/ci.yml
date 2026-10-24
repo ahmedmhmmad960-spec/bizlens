@@ -35,6 +35,29 @@ jobs:
       - name: Tests
         run: python -m pytest
 
+      - name: Verify isolated wheel install and developer CLI
+        run: |
+          python -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/bizlens-wheel" .
+          python -m pip install --no-deps --target "$RUNNER_TEMP/bizlens-site" \
+            "$RUNNER_TEMP/bizlens-wheel"/bizlens-*.whl
+          (
+            cd "$RUNNER_TEMP"
+            PYTHONPATH="$RUNNER_TEMP/bizlens-site" python -m bizlens_toolkit usdc-demo
+          )
+
+      - name: Developer Toolkit golden and Base contract
+        run: |
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/order_lines.csv \
+            --expected tests/fixtures/golden/order_lines.expected.json
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/profit_reversal.csv \
+            --expected tests/fixtures/golden/profit_reversal.expected.json
+          python -m bizlens_toolkit usdc-demo
+          python -m examples.developer_toolkit.quickstart
+          # Real explorer reference is pinned; CI does not make live chain calls.
+          python -m examples.developer_toolkit.base_sepolia_reference
+
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
@@ -69,6 +92,7 @@ jobs:
       # Force the deterministic rule-based provider. Never spend AI tokens in CI.
       OPENAI_API_KEY: ""
       BIZLENS_AI_MODEL: ""
+      BIZLENS_BASE_RPC_ENABLED: ""
       BIZLENS_API_URL: http://127.0.0.1:8000
       BIZLENS_WEB_URL: http://127.0.0.1:3000
       NEXT_TELEMETRY_DISABLED: "1"
@@ -111,6 +135,36 @@ jobs:
       - name: Verify Next.js-to-FastAPI HTTP journey
         run: python scripts/demo_http_smoke.py
 
+      - name: Launch preinstalled headless Chrome (local-only)
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then
+            echo "No preinstalled Chrome binary available; browser gate remains open."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/bizlens-browser"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+            --remote-debugging-address=127.0.0.1 --remote-debugging-port=9223 \
+            --user-data-dir="$RUNNER_TEMP/bizlens-chrome-profile" \
+            --window-size=1440,900 about:blank \
+            > "$RUNNER_TEMP/bizlens-chrome.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/bizlens-chrome.pid"
+
+      - name: Verify real Chrome click-through and mobile layout
+        timeout-minutes: 3
+        env:
+          BIZLENS_BROWSER_SCREENSHOT_DIR: ${{ runner.temp }}/bizlens-browser
+        run: python scripts/browser_cdp_smoke.py
+
+      - name: Attach synthetic-only browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bizlens-browser-${{ github.run_id }}
+          path: ${{ runner.temp }}/bizlens-browser/*.png
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Include server logs on error
         if: failure()
         run: |
@@ -118,3 +172,9 @@ jobs:
           tail -n 100 "$RUNNER_TEMP/bizlens-api.log" || true
           echo "=== Web server ==="
           tail -n 100 "$RUNNER_TEMP/bizlens-web.log" || true
+          echo "=== Local-only Chrome startup diagnostics ==="
+          tail -n 120 "$RUNNER_TEMP/bizlens-chrome.log" || true
+          echo "=== Chrome process ==="
+          if [ -f "$RUNNER_TEMP/bizlens-chrome.pid" ]; then
+            ps -p "$(cat "$RUNNER_TEMP/bizlens-chrome.pid")" -o pid,stat,comm || true
+          fi

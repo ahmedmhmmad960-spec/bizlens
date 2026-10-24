@@ -54,6 +54,31 @@ BizLens keeps calculations such as revenue, cost, gross profit, gross margin, co
 
 This boundary is deliberate: a language model should not silently change a business metric or invent a diagnosis that the data does not support.
 
+## Developer Toolkit (draft PR #24)
+
+BizLens includes an optional installable **Developer Toolkit** that developers
+can use to reproduce the financial diagnosis engine and a read-only Base USDC
+evidence matcher **without a dashboard, AI key, wallet or RPC access**.
+
+> **Status:** This feature is currently in draft [PR #24](https://github.com/ahmedmhmmad960-spec/bizlens/pull/24).
+> These commands require that branch until it is merged. The mainline release
+> does not yet claim payment settlement verification.
+
+```sh
+python -m pip install -e .
+python -m examples.developer_toolkit.quickstart
+python -m bizlens_toolkit verify-golden \
+  --csv tests/fixtures/golden/profit_reversal.csv \
+  --expected tests/fixtures/golden/profit_reversal.expected.json
+python -m bizlens_toolkit usdc-demo
+```
+
+The synthetic Base examples **are not real payments**. Real network
+inspection is optional, read-only, disabled by default in the web/API,
+and not a cryptographic finality proof. See
+[Developer Toolkit quickstart](docs/developer-toolkit.md) and
+[Base/USDC truth contract](docs/base-usdc-starter-contract.md).
+
 ## Current capabilities
 
 - CSV business-data ingestion

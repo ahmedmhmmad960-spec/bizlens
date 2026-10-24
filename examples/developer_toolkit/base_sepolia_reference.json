@@ -1,0 +1,23 @@
+{
+  "schema_version": "bizlens.public_reference.v1",
+  "reference_id": "BASE-SEPOLIA-USDC-001",
+  "network": "Base Sepolia",
+  "chain_id": 84532,
+  "transaction_hash": "0x32def9a45ee1ba8dadc6fd557719b89ea9b43c87792de9c496ed9b08728a57d0",
+  "recipient": "0xBB7Bc0b596d471b34F2770E95f93f0AB9596A649",
+  "token_contract": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "token": "Circle native USDC (testnet)",
+  "expected_amount_usdc": "0.001",
+  "expected_amount_raw": 1000,
+  "explorer_block_number": 42173271,
+  "explorer_reported_status": "Success",
+  "explorer_reported_timestamp_utc": "2026-05-30T04:20:30Z",
+  "explorer_url": "https://sepolia.basescan.org/tx/0x32def9a45ee1ba8dadc6fd557719b89ea9b43c87792de9c496ed9b08728a57d0",
+  "provenance": "Public explorer observation only; independently reproducing the RPC receipt is a separate opt-in step.",
+  "attribution": "Public third-party testnet transfer; BizLens did not initiate or receive it.",
+  "sample_invoice_is_hypothetical": true,
+  "invoice_paid": false,
+  "onchain_rpc_verified_by_bizlens": false,
+  "settlement_finality_established": false,
+  "privacy_notice": "All addresses and transactions are already public blockchain data. No personal ownership is inferred."
+}

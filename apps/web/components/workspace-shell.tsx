@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight, ArrowUpRight, FileText, LayoutDashboard,
-  ListChecks, Menu, MessageSquare, X,
+  ListChecks, Menu, MessageSquare, ShieldCheck, X,
 } from "lucide-react";
 
-export type WorkspaceView = "overview" | "feed" | "changes" | "ask" | "report";
+export type WorkspaceView = "overview" | "feed" | "changes" | "ask" | "report" | "base";
 
 const navigation = [
   { view: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -14,6 +14,7 @@ const navigation = [
   { view: "changes", label: "What Changed", Icon: ArrowLeftRight },
   { view: "ask", label: "Ask BizLens", Icon: MessageSquare },
   { view: "report", label: "Report", Icon: FileText },
+  { view: "base", label: "Base / USDC", Icon: ShieldCheck },
 ] as const;
 
 type Props = {
@@ -29,29 +30,61 @@ export default function WorkspaceShell({
   active, orderCount, sample, onNavigate, onExit, children,
 }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 780px)");
+    const syncViewport = () => {
+      setMobileViewport(media.matches);
+      if (!media.matches) setMobileOpen(false);
+    };
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (mobileOpen && mobileViewport) closeRef.current?.focus();
+  }, [mobileOpen, mobileViewport]);
+
+  function closeMobileNavigation() {
+    setMobileOpen(false);
+    if (mobileViewport) window.requestAnimationFrame(() => toggleRef.current?.focus());
+  }
+
   const orders = typeof orderCount === "number" && Number.isFinite(orderCount)
     ? orderCount.toLocaleString("en-US")
     : "—";
   const current = navigation.find((item) => item.view === active);
 
   function navigate(view: WorkspaceView) {
-    setMobileOpen(false);
+    if (mobileViewport) closeMobileNavigation();
+    else setMobileOpen(false);
     onNavigate(view);
   }
 
   return (
     <div className="workspace-layout">
       {mobileOpen ? (
-        <button className="workspace-scrim" type="button" onClick={() => setMobileOpen(false)}
+        <button className="workspace-scrim" type="button" onClick={closeMobileNavigation}
           aria-label="Close workspace navigation" />
       ) : null}
-      <aside className={`workspace-sidebar${mobileOpen ? " workspace-sidebar-open" : ""}`}
-        aria-label="Workspace navigation">
+      <aside id="workspace-navigation" className={`workspace-sidebar${mobileOpen ? " workspace-sidebar-open" : ""}`}
+        aria-label="Workspace navigation" aria-hidden={mobileViewport && !mobileOpen}
+        inert={mobileViewport && !mobileOpen}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && mobileOpen) {
+            event.stopPropagation();
+            closeMobileNavigation();
+          }
+        }}>
         <div className="workspace-brand">
           <span className="workspace-brand-mark" aria-hidden="true"><i /></span>
           <span>BizLens</span>
-          <button className="workspace-close" type="button"
-            aria-label="Close navigation" onClick={() => setMobileOpen(false)}><X size={19}/></button>
+          <button className="workspace-close" type="button" ref={closeRef}
+            aria-label="Close navigation" onClick={closeMobileNavigation}><X size={19}/></button>
         </div>
         <div className="workspace-dataset">
           <div className="workspace-dataset-mark" aria-hidden="true">B</div>
@@ -76,11 +109,12 @@ export default function WorkspaceShell({
           <button type="button" onClick={onExit}>← Landing</button>
         </div>
       </aside>
-      <div className="workspace-main">
+      <div className="workspace-main" inert={mobileViewport && mobileOpen}>
         <header className="workspace-topbar">
           <div className="workspace-topbar-left">
-            <button className="workspace-mobile-toggle" type="button"
-              aria-label="Open workspace navigation" aria-expanded={mobileOpen}
+            <button className="workspace-mobile-toggle" type="button" ref={toggleRef}
+              aria-label="Open workspace navigation" aria-controls="workspace-navigation"
+              aria-expanded={mobileOpen}
               onClick={() => setMobileOpen(true)}><Menu size={21}/></button>
             <span className="workspace-breadcrumb">{sample ? "Demo dataset" : "Your data"}</span>
             <span className="workspace-breadcrumb-chevron" aria-hidden="true">›</span>

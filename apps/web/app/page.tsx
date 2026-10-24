@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AskBizLens from "@/components/ask-bizlens";
+import BaseUsdcEvidence from "@/components/base-usdc-evidence";
 import BusinessOverview from "@/components/business-overview";
 import BusinessReport from "@/components/business-report";
 import DiagnosisFeed from "@/components/diagnosis-feed";
@@ -57,7 +58,9 @@ export default function Home() {
   }
   if (!analysis) return null;
 
-  const content = view === "overview"
+  const content = view === "base"
+    ? <BaseUsdcEvidence />
+    : view === "overview"
     ? <BusinessOverview analysis={analysis} onBack={() => setView("diagnosis")}
         onContinue={() => setView("feed")}/>
     : view === "feed"
