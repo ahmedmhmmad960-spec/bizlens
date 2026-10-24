@@ -5,9 +5,9 @@ from dataclasses import replace
 import pytest
 
 from integrations.base_usdc.matcher import (
+    USDC_CONTRACTS,
     Invoice,
     TransferRecord,
-    USDC_CONTRACTS,
     match_invoice,
     match_invoices,
 )
