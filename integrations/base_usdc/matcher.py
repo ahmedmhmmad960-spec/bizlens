@@ -9,7 +9,6 @@ from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
-
 # Circle-issued native USDC contracts, not bridged USDbC.
 # Source: https://developers.circle.com/stablecoins/usdc-contract-addresses
 USDC_CONTRACTS = {
