@@ -162,6 +162,13 @@ def test_policy_must_be_positive():
         ({"topics": ["0x" + "5" * 64]}, "missing_transfer"),
         ({"logIndex": "0x3"}, "missing_transfer"),
         ({"removed": True}, "invalid_evidence"),
+        ({"removed": "true"}, "invalid_evidence"),
+        ({"removed": 1}, "invalid_evidence"),
+        ({"topics": [
+            TRANSFER_TOPIC,
+            "0x" + "f" * 64,
+            "0x" + "0" * 24 + "a" * 40,
+        ]}, "invalid_evidence"),
         ({"blockHash": "0x" + "4" * 64}, "invalid_evidence"),
         ({"transactionHash": "0x" + "4" * 64}, "invalid_evidence"),
         ({"data": "0x01"}, "invalid_evidence"),
