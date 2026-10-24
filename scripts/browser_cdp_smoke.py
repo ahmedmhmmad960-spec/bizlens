@@ -274,7 +274,10 @@ def test_late_inspection_response(browser):
         )
         print("BROWSER PASS: unconfirmed evidence clears on input change", flush=True)
     finally:
-        assert browser.js("window.__bizlensRace.restore()") is None
+        assert browser.js(
+            "(() => {window.__bizlensRace.restore(); return "
+            "typeof window.fetch === 'function';})()"
+        )
 
 
 def main():
