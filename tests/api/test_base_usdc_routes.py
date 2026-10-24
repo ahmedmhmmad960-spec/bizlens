@@ -7,7 +7,7 @@ from apps.api.app.main import app
 from integrations.base_usdc.rpc_evidence import ReceiptObservation
 
 client = TestClient(app)
-TEST_RPC_TOKEN = "test-only-operator-token-0123456789-abcdef"
+TEST_RPC_TOKEN = "a" * 64  # Synthetic only. Never use a test key in deployment.
 AUTH = {"X-BizLens-Rpc-Key": TEST_RPC_TOKEN}
 
 
