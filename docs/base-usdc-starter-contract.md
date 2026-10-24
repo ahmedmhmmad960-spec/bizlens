@@ -175,11 +175,13 @@ overflow or implicit rounding.
 
 This draft PR supplies the standalone offline matcher, a bounded optional
 RPC observation adapter, CLI examples and synthetic negative-case tests.
-**No production UI, report wiring, live Mainnet payment or verified real
-transaction has yet been demonstrated.** Before Demo V1 release:
+**A draft Workspace UI and API are implemented, but browser usability,
+production security, real onchain reference and release readiness are NOT yet
+verified. No live Mainnet payment or independently audited real transaction
+has been demonstrated.** Before Demo V1 release:
 
-- Integrate a separately labeled *evidence-only* Base section in BizLens;
-  do not alter commerce KPIs or claim it is a complete payments system.
+- Verify the implemented evidence-only Base section in a real browser, on
+  desktop/mobile/keyboard; do not alter commerce KPIs or imply a payments system.
 - Check any intended real Base Sepolia fixture against an independently
   inspected public receipt; include the actual tx/explorer citation.
 - Validate chain replay resistance, duplicate invoice claims, RPC outages,
