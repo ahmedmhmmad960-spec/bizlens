@@ -5,6 +5,7 @@ opt-in enables a bounded read-only RPC call to the two hard-coded Base hosts.
 """
 import hmac
 import os
+import re
 import threading
 import time
 from collections import deque
@@ -65,7 +66,9 @@ def base_usdc_inspect(
 ) -> JSONResponse:
     """Optional on-demand public receipt observation; never paid status."""
     configured = os.getenv("BIZLENS_BASE_RPC_TOKEN", "")
-    if os.getenv("BIZLENS_BASE_RPC_ENABLED") != "1" or len(configured) < 32:
+    if os.getenv("BIZLENS_BASE_RPC_ENABLED") != "1" or not re.fullmatch(
+        r"[0-9a-f]{64}", configured
+    ):
         return JSONResponse(
             status_code=503,
             headers={"Cache-Control": "no-store"},
