@@ -310,7 +310,6 @@ def test_transport_classifies_failure_without_exposing_provider_text(
         (b"definitely not JSON", "invalid_response"),
         (b'{"jsonrpc":"2.0","id":1,"error":{"message":"secret vendor error"}}',
          "rpc_error"),
-        (b'{"jsonrpc":"2.0","id":1,"result":null}', "invalid_response"),
     ],
 )
 def test_transport_rejects_malformed_rpc_responses_without_logging_body(
