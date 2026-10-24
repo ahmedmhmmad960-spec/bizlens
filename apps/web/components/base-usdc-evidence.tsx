@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 type MatchResult = {
   invoice_id: string;
@@ -101,7 +101,7 @@ export default function BaseUsdcEvidence() {
     }
   }
 
-  async function verify(event: React.FormEvent<HTMLFormElement>) {
+  async function verify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (verifyBusy) return;
     setVerifyBusy(true);
