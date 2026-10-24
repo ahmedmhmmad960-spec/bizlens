@@ -41,11 +41,14 @@ pentest, chain verification, production authorization, or a Base endorsement.
    Public deployment must add proper user authentication, gateway/global
    rate limits, privacy/security headers, logging redaction and threat-model
    review. Keep real inspection disabled publicly until then.
-2. **P0 — Receipt provenance.** No independently reproduced real publicly
-   referenced Base Sepolia native-USDC transaction plus exact block/log has
-   been attached. Synthetic tests validate code paths, not a chain claim.
-   Cite actual public transaction source and review the expected recipient
-   and amount before making any external claim.
+2. **P0 — Independent receipt reproduction.** A real third-party native
+   USDC transfer, recipient, amount and block are now referenced from the
+   [Base Sepolia public explorer case](base-sepolia-public-reference.md).
+   The maintainers **have not yet successfully re-read its receipt via
+   independent RPC or confirmed the exact onchain log index**. The pinned
+   attribution is not a proof, and no real business invoice is implied.
+   Before any stronger claim, obtain a successful opt-in RPC observation
+   and record its provenance and date; review via an independent source.
 3. **P0 — Proof terminology.** `rpc_observed_match` is an observation from
    one RPC provider under a policy of six L2 blocks by default. It is not a
    cryptographic proof, Ethereum L1 finality, invoice paid or funds available.
@@ -67,7 +70,10 @@ pentest, chain verification, production authorization, or a Base endorsement.
 - [x] Defensive test suite for malformed receipt, wrong chain/token/recipient,
       missing/failed tx, partial amount, duplicate claims, RPC unavailability.
 - [x] CI includes standalone wheel smoke, Developer Toolkit and HTTP journey.
-- [ ] Real **public**, independently cited Base Sepolia USDC receipt/transfer.
+- [x] Real **public** Base Sepolia native-USDC transfer attributed to a
+      third-party explorer, with pinned public fields and source link.
+- [ ] Independently reproduced live RPC receipt/log evidence (not only
+      explorer text and mocked tests); capture source/date of verification.
 - [ ] Independent engineering/security review and fix all blocking findings.
 - [ ] Authenticated operator-only manual interaction tested in real browser.
 - [ ] Desktop/mobile/keyboard QA and final visual comparison.
