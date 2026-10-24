@@ -190,6 +190,11 @@ def main() -> None:
     )
     check(content_status == 415, "Inspector must reject non-JSON requests at web boundary")
     check(json.loads(content_raw)["success"] is False, "Non-JSON request accepted")
+    spoof_status, _ = request(
+        "/api/base-usdc/inspect",
+        json.dumps(inspect_payload).encode(), "application/jsonp",
+    )
+    check(spoof_status == 415, "JSON-like spoofed MIME type must not bypass boundary")
     print("PASS: Next.js Base inspector rejects large/non-JSON payloads before RPC")
 
     print("DEMO_HTTP_JOURNEY: PASS")
