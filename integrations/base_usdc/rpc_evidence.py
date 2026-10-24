@@ -280,6 +280,6 @@ def inspect_invoice(
         )
     except (ValueError, TypeError, KeyError):
         return result("invalid_evidence", "Malformed or contradictory chain evidence; no match.")
-    except (RpcUnavailableError, Exception):
+    except Exception:
         # Hide transport errors and never display secrets or endpoint responses.
         return result("rpc_unavailable", "Read-only RPC unavailable; nothing was verified.")
