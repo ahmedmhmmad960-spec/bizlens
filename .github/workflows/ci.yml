@@ -35,6 +35,16 @@ jobs:
       - name: Tests
         run: python -m pytest
 
+      - name: Verify isolated wheel install and developer CLI
+        run: |
+          python -m pip wheel --no-deps --wheel-dir "$RUNNER_TEMP/bizlens-wheel" .
+          python -m pip install --no-deps --target "$RUNNER_TEMP/bizlens-site" \
+            "$RUNNER_TEMP/bizlens-wheel"/bizlens-*.whl
+          (
+            cd "$RUNNER_TEMP"
+            PYTHONPATH="$RUNNER_TEMP/bizlens-site" python -m bizlens_toolkit usdc-demo
+          )
+
       - name: Developer Toolkit golden and Base contract
         run: |
           python -m bizlens_toolkit verify-golden \
