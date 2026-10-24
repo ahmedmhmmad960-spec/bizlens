@@ -35,6 +35,17 @@ jobs:
       - name: Tests
         run: python -m pytest
 
+      - name: Developer Toolkit golden and Base contract
+        run: |
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/order_lines.csv \
+            --expected tests/fixtures/golden/order_lines.expected.json
+          python -m bizlens_toolkit verify-golden \
+            --csv tests/fixtures/golden/profit_reversal.csv \
+            --expected tests/fixtures/golden/profit_reversal.expected.json
+          python -m bizlens_toolkit usdc-demo
+          python -m examples.developer_toolkit.quickstart
+
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
