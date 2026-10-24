@@ -188,12 +188,12 @@ export default function BaseUsdcEvidence() {
         <p>
           This sends public transaction fields to an allowlisted Base RPC only when
           the operator enables and authorizes inspection. The key below is a local
-          inspection access key, never a wallet private key. No keys are saved on this page.
+          inspection access key, never a wallet private key. The key stays only in the active page memory; it is not saved to browser storage.
           Base RPC evidence is not Ethereum finality or proof of settlement.
         </p>
         <form className="base-evidence-form" onSubmit={(event) => void verify(event)}>
           <label>Operator inspection access key (not a wallet key)
-            <input required minLength={32} type="password" autoComplete="off"
+            <input required minLength={64} maxLength={64} pattern="[0-9a-f]{64}" type="password" autoComplete="off"
               value={inspectionKey} onChange={(event) => setInspectionKey(event.target.value)}
               placeholder="Server-configured inspection key" />
           </label>
