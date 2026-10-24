@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ai.client.openai_provider import OpenAIProvider
 from ai.client.rule_based_provider import RuleBasedProvider
+from apps.api.app.base_usdc_ingress import BaseInspectionIngressLimit
 from apps.api.app.base_usdc_routes import router as base_usdc_router
 from core.analysis.service import AnalysisService
 
@@ -25,6 +26,8 @@ ai_provider = OpenAIProvider() if api_key and ai_model else RuleBasedProvider()
 analysis_service = AnalysisService(ai_provider)
 analysis_store: dict[str, dict[str, Any]] = {}
 app.include_router(base_usdc_router)
+# Independent direct-API body cap; Next.js's 2 KiB limit alone is insufficient.
+app.add_middleware(BaseInspectionIngressLimit)
 
 
 @app.get("/")
