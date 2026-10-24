@@ -53,15 +53,17 @@ pentest, chain verification, production authorization, or a Base endorsement.
    one RPC provider under a policy of six L2 blocks by default. It is not a
    cryptographic proof, Ethereum L1 finality, invoice paid or funds available.
    `candidate_match` is still weaker: just matching supplied fields.
-4. **P1 — GUI acceptance.** CI exercises Next.js HTTP, not a graphical
-   browser. A [manual browser acceptance plan](v1-browser-acceptance.md)
-   now documents Chrome/mobile/keyboard, stale-request race testing,
-   private operator-key handling and report isolation. **None of those
-   manual interaction checks have yet been signed off.** Codespace
-   preview/auth issue is tracked separately.
-5. **P1 — Independent review.** Separate reviewer must inspect matching
-   contract, URI/authorization boundaries, tests, package interface and
-   negative cases before owner approves merge; internal review is not enough.
+4. **P1 — GUI acceptance.** GitHub CI now executes actual headless Chrome
+   clicks and synthetic delayed-response/390px-mobile checks in addition
+   to Next.js HTTP. The [browser acceptance plan](v1-browser-acceptance.md)
+   distinguishes these automated checks from **uncompleted manual
+   keyboard/screen-reader/cross-browser/visual review**. Codespace
+   preview/auth remains separate.
+5. **P1 — Independent review.** A separate reviewer must follow the
+   [threat-model handoff](v1-independent-security-review-handoff.md),
+   independently reproduce the matching/security tests and record
+   findings on the exact PR SHA. Maintainer tests and source review
+   are **not** an independent audit or approval.
 6. **P1 — Local vs release install.** Verify clean editable installation and
    an isolated wheel; third-party reuse needs documented stable API,
    versioning, licensing and migration expectations.
@@ -82,8 +84,16 @@ pentest, chain verification, production authorization, or a Base endorsement.
   must never be presented as durable anti-double-payment enforcement.
   Production reconciliation requires an independently reviewed persistent
   claim store and replay policy; this is outside the approved V1 scope.
+- Public RPC transport is now schema-constrained to its four inspection
+  methods and their exact parameter shapes; response JSON rejects duplicate
+  keys at every depth, nonstandard nonfinite constants, and boolean/float
+  IDs masquerading as numeric ID 1. Invalid timeouts also fail before
+  network access. Synthetic negative tests cover these boundaries.
+- Automated headless Chrome now proves click-through, synthetic Base outcome
+  labels, 390px viewport and stale/late response behavior. Manual
+  accessibility, cross-browser and visual acceptance remain unsigned.
 - This review is **maintainer source review only**; no independent human
-  audit or actual graphical browser proof has been performed.
+  audit or verified live chain proof has been performed.
 
 ## Evidence acceptance checklist (maintain separate from claims)
 
