@@ -58,6 +58,13 @@ class RpcUnavailableError(Exception):
     """The public RPC could not provide usable read-only data."""
 
 
+class _NoRedirect(request.HTTPRedirectHandler):
+    """Never let a public RPC redirect an allowlisted request to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 class RpcTransport(Protocol):
     def call(self, method: str, params: list[object]) -> object: ...
 
@@ -85,7 +92,9 @@ class BasePublicRpc:
             method="POST",
         )
         try:
-            with request.urlopen(req, timeout=self.timeout) as response:
+            with request.build_opener(_NoRedirect()).open(
+                req, timeout=self.timeout
+            ) as response:
                 data = response.read(_MAX_RESPONSE + 1)
                 if len(data) > _MAX_RESPONSE:
                     raise RpcUnavailableError("RPC response exceeds safety limit.")
