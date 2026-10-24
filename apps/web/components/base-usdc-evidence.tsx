@@ -85,6 +85,7 @@ export default function BaseUsdcEvidence() {
   const [amount, setAmount] = useState("");
   const [txHash, setTxHash] = useState("");
   const [logIndex, setLogIndex] = useState("");
+  const [inspectionKey, setInspectionKey] = useState("");
 
   async function showDemo() {
     if (demoBusy) return;
@@ -114,7 +115,10 @@ export default function BaseUsdcEvidence() {
       }
       const response = await fetch("/api/base-usdc/inspect", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-BizLens-Rpc-Key": inspectionKey,
+        },
         cache: "no-store",
         body: JSON.stringify({
           invoice_id: invoiceId.trim(),
@@ -183,10 +187,16 @@ export default function BaseUsdcEvidence() {
         </div>
         <p>
           This sends public transaction fields to an allowlisted Base RPC only when
-          the server administrator explicitly enables inspection. Use no private keys.
+          the operator enables and authorizes inspection. The key below is a local
+          inspection access key, never a wallet private key. No keys are saved on this page.
           Base RPC evidence is not Ethereum finality or proof of settlement.
         </p>
         <form className="base-evidence-form" onSubmit={(event) => void verify(event)}>
+          <label>Operator inspection access key (not a wallet key)
+            <input required minLength={32} type="password" autoComplete="off"
+              value={inspectionKey} onChange={(event) => setInspectionKey(event.target.value)}
+              placeholder="Server-configured inspection key" />
+          </label>
           <label>Network
             <select value={chain} onChange={(event) => setChain(Number(event.target.value) as 84532 | 8453)}>
               <option value={84532}>Base Sepolia (testnet)</option>
