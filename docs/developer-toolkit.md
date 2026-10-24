@@ -106,6 +106,27 @@ transaction fields, is documented separately in
 RPC is rate-limited, not suitable for production; it has its own trust
 boundary and is **disabled by default** in the web demo.
 
+## Public Base Sepolia evidence reference (opt-in)
+
+We have located an openly viewable native USDC transfer on Base Sepolia.
+You can reproduce its *attributed explorer details* safely and offline:
+
+```sh
+python -m examples.developer_toolkit.base_sepolia_reference
+```
+
+Only with deliberate permission should you query the public read-only RPC:
+
+```sh
+python -m examples.developer_toolkit.base_sepolia_reference --inspect
+```
+
+The first command is **not** a chain verification. The second requires
+network access but no account, payment or private key; it will not claim
+success if RPC evidence is unavailable or contradicts the public reference.
+Full transaction, provenance, limitations and verification policy:
+[Public Base Sepolia reference](base-sepolia-public-reference.md).
+
 ## Truth table — what is and is not established
 
 | Capability | What you may claim | What you must NOT claim |
