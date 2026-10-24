@@ -1,10 +1,11 @@
-# Base/USDC Starter — offline matching contract (V1 slice 1)
+# Base/USDC Starter — read-only evidence contract (V1)
 
 **Status: draft feature branch, not a shipped payment/reconciliation product.**
 
-This slice offers a dependency-free, deterministic comparison of an invoice to
-**caller-supplied ERC-20 Transfer event records** on Base. It has **no network
-access**, does not retrieve chain receipts, and **never verifies settlement**.
+This slice offers dependency-free deterministic matching of invoices to
+**caller-supplied ERC-20 Transfer records** and an **optional read-only RPC
+receipt check** on Base. The offline mode does not access the network; the
+optional RPC mode is explicitly requested and **never verifies final settlement**.
 Even `candidate_match` must never be shown as "paid" or "on-chain verified".
 No wallets, private keys, signing, funds, custodial flows or external API costs.
 
@@ -51,19 +52,87 @@ not silently mark invoices settled, credit a ledger or modify business
 financial KPIs. There are no user-provided RPC endpoints or untrusted
 screenshots treated as proof.
 
-## Reproduce without services
+## Independent reproduction: developer-first
+
+The offline mode has no credentials, wallet, RPC calls or network dependency:
 
 ```bash
-python -m pytest tests/integrations/test_base_usdc_matcher.py -q
+python -m integrations.base_usdc --demo
+python -m pytest tests/integrations/ -q
 ```
 
-This uses only synthetic typed records. The next separate PR can add a
-**read-only chain-evidence adapter** that verifies network chain ID,
-transaction receipt success, the native USDC token contract, exact ERC-20
-Transfer log, block inclusion and a documented confirmation policy, using
-public read-only infrastructure without credentials or transfers. Until
-such verification exists, the user interface must say "unverified supplied
-record" or leave the feature in planned status.
+The CLI prints three **synthetic** cases (candidate match, partial, missing)
+with `onchain_verified: false` and `real_transaction: false`. It is safe to
+use as an illustration, **not** an example of a real onchain payment.
 
-A later small PR can integrate the read-only result into the report and
-UI, and a Developer Toolkit PR can expose reproducible standalone examples.
+### Optional real receipt inspection
+
+Read-only mode is **opt-in** and sends an explicit tx hash to the appropriate
+Base public RPC. Example, replacing each placeholder with your *own*
+public testnet transaction evidence:
+
+```bash
+python -m integrations.base_usdc --verify --chain 84532 \
+  --invoice-id "EXAMPLE-001" \
+  --recipient "0xYOUR_40_HEX_CHARACTER_RECIPIENT" \
+  --amount-usdc "12.345678" \
+  --tx-hash "0xYOUR_64_HEX_CHARACTER_TRANSACTION_HASH" \
+  --log-index 0
+```
+
+`--chain 8453` selects Base Mainnet explicitly. The program uses **only**
+`https://mainnet.base.org` / `https://sepolia.base.org` and permits only
+`eth_chainId`, `eth_getTransactionReceipt`, `eth_getBlockByNumber`, and
+`eth_blockNumber`. It has bounded response size and timeout, uses no
+API keys, and NEVER calls a transaction-sending method.
+
+The new `inspect_invoice` function checks:
+
+1. RPC network ID and transaction hash equal the invoice reference.
+2. Receipt execution status is successful, not pending or reverted.
+3. Receipt block matches the currently canonical L2 block hash reported
+   by the same RPC source.
+4. A documented **six L2-block observation policy** by default. This is
+   a *demo confidence threshold*, **not Base or Ethereum finality**.
+5. Exact ERC-20 `Transfer(address,address,uint256)` event signature and
+   indexed recipient, native Circle USDC contract, log index, and integer
+   6-decimal amount. Multiple events without an index are ambiguous.
+6. Contradictory or invalid evidence fails closed: no positive match.
+
+Only `rpc_observed_match` sets `rpc_observed: true`. The result means that
+a read-only Base RPC node reported a successful matching event in a currently
+canonical L2 block with the requested number of confirmations. **It is not
+a cryptographic light-client proof, L1-finalized settlement, or authority
+to mark an invoice paid.** The RPC provider remains a trust dependency.
+A partial, duplicate, stale, wrong-address, fake-token, missing or failed
+receipt must not be shown as an accepted payment.
+
+Public Base RPCs are **rate limited and unsuitable for production traffic**.
+This adapter is for a small reproducible, noncommercial V1 demo and engineer
+evaluation. Network failures return an unverified state, never fabricated
+success.
+
+Official references:
+- https://docs.base.org/get-started/connect-to-base
+- https://docs.base.org/specifications/node-operators/run-a-node
+- https://ethereum.org/developers/docs/apis/json-rpc/
+- https://developers.circle.com/stablecoins/usdc-contract-addresses
+
+## Open scope and next quality gates
+
+This draft PR supplies the standalone offline matcher, a bounded optional
+RPC observation adapter, CLI examples and synthetic negative-case tests.
+**No production UI, report wiring, live Mainnet payment or verified real
+transaction has yet been demonstrated.** Before Demo V1 release:
+
+- Integrate a separately labeled *evidence-only* Base section in BizLens;
+  do not alter commerce KPIs or claim it is a complete payments system.
+- Check any intended real Base Sepolia fixture against an independently
+  inspected public receipt; include the actual tx/explorer citation.
+- Validate chain replay resistance, duplicate invoice claims, RPC outages,
+  noncanonical receipts, wrong contract, partial amount, and frontend error
+  presentation across the complete API/UI flow.
+- Deliver Developer Toolkit docs and stable typed public interfaces, then
+  perform independent reproducibility review, accessibility checks and CI.
+- Require human code review and final approval before merge or demo release.
+
