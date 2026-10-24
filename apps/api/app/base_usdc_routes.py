@@ -61,7 +61,10 @@ def base_usdc_inspect(payload: InvoiceInspectionRequest) -> dict | JSONResponse:
         return JSONResponse(
             status_code=422,
             headers={"Cache-Control": "no-store"},
-            content={"success": False, "error": "Invalid invoice fields; inspect the amount and addresses."},
+            content={
+                "success": False,
+                "error": "Invalid invoice fields; inspect the amount and addresses.",
+            },
         )
 
     finding = inspect_invoice(invoice, BasePublicRpc(invoice.chain_id))
