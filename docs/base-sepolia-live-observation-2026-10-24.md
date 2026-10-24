@@ -29,9 +29,14 @@ reference described in [Public Base Sepolia evidence](base-sepolia-public-refere
 The RPC observation did **not** furnish a receipt block, hash,
 confirmations, log index, or a successful transfer check. This run
 **does not establish whether the explorer annotation was accurate or not**.
-The current generic `rpc_unavailable` response does not expose enough
-detail to assign a definitive cause to DNS, network gateway, rate limit,
-public node availability or response validation. Do not guess.
+The **at-the-time** generic `rpc_unavailable` response does not expose
+enough detail to assign a definitive cause to DNS, network gateway, rate
+limit, public node availability or response validation. Do not guess.
+Subsequent code hardening added **sanitized categories** for rate-limit,
+access denial, transport errors, malformed envelopes and JSON-RPC errors
+for *future* inspections. These new categories cannot retrospectively
+identify the cause of this historical attempt, and do not themselves
+authorize a retry.
 
 Base's [public status page](https://status.base.org/) reported a recent
 2026-10-23 Sepolia public RPC latency incident. This is only contextual,
