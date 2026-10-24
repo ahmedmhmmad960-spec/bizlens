@@ -362,3 +362,26 @@ def test_transport_rejects_valid_rpc_error_envelope_without_exposing_it(monkeypa
         BasePublicRpc(CHAIN).call("eth_chainId", [])
     assert captured.value.category == "rpc_error"
     assert "secret" not in str(captured.value)
+
+
+def test_jsonrpc_null_receipt_is_a_valid_pending_result(monkeypatch):
+    """The JSON-RPC protocol legitimately uses null for unknown/pending receipts."""
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self, count):
+            return b'{"jsonrpc":"2.0","id":1,"result":null}'
+
+    class FakeOpener:
+        def open(self, req, timeout):
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        rpc_module.request, "build_opener",
+        lambda *handlers: FakeOpener(),
+    )
+    assert BasePublicRpc(CHAIN).call("eth_getTransactionReceipt", [TX]) is None
