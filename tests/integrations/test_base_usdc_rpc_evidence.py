@@ -309,7 +309,7 @@ def test_transport_classifies_failure_without_exposing_provider_text(
     [
         (b"definitely not JSON", "invalid_response"),
         (b'{"jsonrpc":"2.0","id":1,"error":{"message":"secret vendor error"}}',
-         "invalid_response"),
+         "rpc_error"),
         (b'{"jsonrpc":"2.0","id":1,"result":null}', "invalid_response"),
     ],
 )
@@ -361,5 +361,5 @@ def test_transport_rejects_valid_rpc_error_envelope_without_exposing_it(monkeypa
     )
     with pytest.raises(RpcUnavailableError) as captured:
         BasePublicRpc(CHAIN).call("eth_chainId", [])
-    assert captured.value.category == "invalid_response"
+    assert captured.value.category == "rpc_error"
     assert "secret" not in str(captured.value)
