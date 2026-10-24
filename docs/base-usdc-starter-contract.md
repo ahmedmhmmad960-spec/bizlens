@@ -127,9 +127,13 @@ starting an analysis. It does not change the deterministic Commerce metrics.
   offline matching results as the developer CLI.
 - `POST /base-usdc/inspect` accepts strict invoice fields and never exposes a
   wallet-signing or transaction-sending function. The server returns HTTP 503
-  and `mode=disabled` unless an operator explicitly sets
-  `BIZLENS_BASE_RPC_ENABLED=1`. **Do not enable this in a public deployment
-  without separate authentication, rate limits and abuse controls.**
+  and `mode=disabled` unless an operator explicitly sets both
+  `BIZLENS_BASE_RPC_ENABLED=1` and a fresh 64-character lowercase hex
+  `BIZLENS_BASE_RPC_TOKEN`. Authorized requests must include the
+  `X-BizLens-Rpc-Key` header; absent/wrong keys receive HTTP 403.
+  A per-process demo guard allows at most 10 authenticated attempts per
+  minute and 2 simultaneous inspections, then HTTP 429. **These limits
+  do not replace a shared production gateway limiter or user management.**
 - Next.js forwards the two endpoints through
   `/api/base-usdc/demo` and `/api/base-usdc/inspect` using the same
   private FastAPI origin as the existing analysis API. Responses use
@@ -142,6 +146,30 @@ starting an analysis. It does not change the deterministic Commerce metrics.
 The smoke test `scripts/demo_http_smoke.py` now verifies both the offline
 sample through the real web proxy and the explicit default RPC-disable path.
 CI clears the enable flag and makes **zero live chain calls**.
+
+## Safe private operator configuration (no paid services)
+
+Generate a *new* key locally without committing, printing in public logs, or
+posting it to any issue:
+
+```sh
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Store it privately as `BIZLENS_BASE_RPC_TOKEN`; set
+`BIZLENS_BASE_RPC_ENABLED=1` only in an isolated local/authorized
+environment. Pass the key in the web inspector password field or the
+`X-BizLens-Rpc-Key` API request header, **never a wallet private key**.
+The browser holds it only in active component memory, not persistent storage.
+Default CI and public V1 demo remain disabled. No keys are bundled.
+
+For this draft: the operator key is an access gate, **not enterprise IAM**;
+the per-process limiter is reset by restarts and is not shared across
+replicas. Production access needs per-user authentication, a reverse-proxy
+limit, deployment controls and independent security review. Public RPC
+redirects are refused. Monetary input must use plain decimal notation,
+at most 18 whole digits and six fractional digits, with no exponents,
+overflow or implicit rounding.
 
 ## Open scope and next quality gates
 
