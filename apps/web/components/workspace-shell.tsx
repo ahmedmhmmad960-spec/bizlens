@@ -3,10 +3,10 @@
 import { useState, type ReactNode } from "react";
 import {
   ArrowLeftRight, ArrowUpRight, FileText, LayoutDashboard,
-  ListChecks, Menu, MessageSquare, X,
+  ListChecks, Menu, MessageSquare, ShieldCheck, X,
 } from "lucide-react";
 
-export type WorkspaceView = "overview" | "feed" | "changes" | "ask" | "report";
+export type WorkspaceView = "overview" | "feed" | "changes" | "ask" | "report" | "base";
 
 const navigation = [
   { view: "overview", label: "Overview", Icon: LayoutDashboard },
@@ -14,6 +14,7 @@ const navigation = [
   { view: "changes", label: "What Changed", Icon: ArrowLeftRight },
   { view: "ask", label: "Ask BizLens", Icon: MessageSquare },
   { view: "report", label: "Report", Icon: FileText },
+  { view: "base", label: "Base / USDC", Icon: ShieldCheck },
 ] as const;
 
 type Props = {
