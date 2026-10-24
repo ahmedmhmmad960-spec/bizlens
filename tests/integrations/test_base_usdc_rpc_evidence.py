@@ -13,9 +13,9 @@ from integrations.base_usdc.rpc_evidence import (
     BASE_RPC_URLS,
     TRANSFER_TOPIC,
     BasePublicRpc,
+    _NoRedirect,
     inspect_invoice,
     inspect_invoices,
-    _NoRedirect,
 )
 
 TX = "0x" + "1" * 64
