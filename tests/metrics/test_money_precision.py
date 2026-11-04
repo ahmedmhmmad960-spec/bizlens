@@ -110,3 +110,51 @@ def test_quarterly_amounts_reconcile_exactly_in_minor_units() -> None:
         [item["gross_profit"] for item in trends], "gross_profit"
     ) == 54
     assert analysis["metrics"]["gross_profit"] == 0.54
+
+
+@pytest.mark.parametrize("value", [
+    "1." + "0" * 30 + "1",
+    "-1." + "0" * 30 + "1",
+    "0." + "0" * 30 + "1",
+])
+def test_long_fractional_cents_are_rejected(value):
+    with pytest.raises(ValueError, match="more than two decimal places"):
+        minor_units(value, "revenue", 1)
+
+
+@pytest.mark.parametrize(("value", "expected"), [
+    ("+3.25", 325),
+    ("-2.25", -225),
+    ("1.5", 150),
+    ("1e2", 10000),
+    ("1.2300", 123),
+    ("0.01", 1),
+])
+def test_valid_decimal_formats_remain_supported(value, expected):
+    assert minor_units(value, "revenue", 1) == expected
+
+
+@pytest.mark.parametrize("value", [
+    "1e-1000100",
+    "-1e-1000100",
+    "1e1000100",
+])
+def test_extreme_exponents_fail_closed(value):
+    with pytest.raises(ValueError):
+        minor_units(value, "revenue", 1)
+
+
+def test_exact_decimal_with_long_trailing_zeros():
+    assert minor_units("0e-1000100", "revenue", 1) == 0
+    assert minor_units("12.34" + "0" * 40, "revenue", 1) == 1234
+
+
+def test_decimal_precision_context_does_not_change_validation():
+    from decimal import localcontext
+    with localcontext() as context:
+        context.prec = 3
+        context.Emin = -20
+        context.Emax = 20
+        assert minor_units("+3.25", "revenue", 1) == 325
+        with pytest.raises(ValueError):
+            minor_units("1e-1000100", "revenue", 1)

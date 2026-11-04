@@ -27,17 +27,37 @@ def minor_units(value: object, column: str, row: int) -> int:
             f"Column '{column}' has a missing or non-finite amount at data row {row}."
         )
 
-    scaled = amount * HUNDRED
-    if scaled != scaled.to_integral_value():
-        raise ValueError(
-            f"Column '{column}' contains more than two decimal places "
-            f"at data row {row}; no silent rounding is allowed."
-        )
-    if abs(scaled) > MAX_MINOR_UNITS:
+    # Validate cents using exact Decimal digits and exponent.
+    sign, digits, exponent = amount.as_tuple()
+
+    if not any(digits):
+        return 0
+
+    shift = exponent + 2
+
+    if shift < 0:
+        trim = -shift
+        if trim > len(digits) or any(digits[-trim:]):
+            raise ValueError(
+                f"Column '{column}' contains more than two decimal places "
+                f"at data row {row}; no silent rounding is allowed."
+            )
+        digits = digits[:-trim]
+        shift = 0
+
+    if len(digits) + shift > len(str(MAX_MINOR_UNITS)):
         raise ValueError(
             f"Column '{column}' exceeds the supported amount range at data row {row}."
         )
-    return int(scaled)
+
+    cents = int("".join(map(str, digits))) * 10 ** shift
+
+    if cents > MAX_MINOR_UNITS:
+        raise ValueError(
+            f"Column '{column}' exceeds the supported amount range at data row {row}."
+        )
+
+    return -cents if sign else cents
 
 
 def sum_minor_units(values, column: str) -> int:
